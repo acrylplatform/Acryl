@@ -78,11 +78,13 @@ abstract class HandshakeHandler(localHandshake: Handshake,
 
   import HandshakeHandler._
 
+  val applicationName = List("wavesA", "wavesK", "acrylA", "acrylK") // TODO : during the transition
+
   override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = msg match {
     case HandshakeTimeoutExpired =>
       peerDatabase.blacklistAndClose(ctx.channel(), "Timeout expired while waiting for handshake")
     case remoteHandshake: Handshake =>
-      if (localHandshake.applicationName != remoteHandshake.applicationName)
+      if (!applicationName.contains(remoteHandshake.applicationName)) // TODO : during the transition
         peerDatabase.blacklistAndClose(
           ctx.channel(),
           s"Remote application name ${remoteHandshake.applicationName} does not match local ${localHandshake.applicationName}")
