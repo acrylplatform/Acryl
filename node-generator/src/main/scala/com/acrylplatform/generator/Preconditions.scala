@@ -1,0 +1,164 @@
+package com.acrylplatform.generator
+
+import java.nio.file.{Files, Paths}
+
+import com.typesafe.config.Config
+import com.acrylplatform.account.{Address, AddressScheme, KeyPair}
+import com.acrylplatform.common.utils.EitherExt2
+import com.acrylplatform.lang.script.Script
+import com.acrylplatform.transaction.Asset.Acryl
+import com.acrylplatform.transaction.Transaction
+import com.acrylplatform.transaction.assets.{IssueTransaction, IssueTransactionV2}
+import com.acrylplatform.transaction.lease.{LeaseTransaction, LeaseTransactionV2}
+import com.acrylplatform.transaction.smart.SetScriptTransaction
+import com.acrylplatform.transaction.smart.script.ScriptCompiler
+import com.acrylplatform.transaction.transfer.TransferTransactionV2
+import com.acrylplatform.utils.Time
+import net.ceedubs.ficus.Ficus._
+import net.ceedubs.ficus.readers.ValueReader
+
+import scala.collection.generic.CanBuildFrom
+
+object Preconditions {
+  private[this] val Fee = 1500000L
+
+  final case class CreatedAccount(keyPair: KeyPair, balance: Long, script: Option[Script])
+
+  sealed abstract class PAction(val priority: Int)
+  final case class LeaseP(from: KeyPair, to: Address, amount: Long) extends PAction(3)
+  final case class IssueP(name: String, issuer: KeyPair, desc: String, amount: Long, decimals: Int, reissueable: Boolean, scriptFile: String)
+      extends PAction(2)
+  final case class CreateAccountP(seed: String, balance: Long, scriptFile: Option[String]) extends PAction(1)
+
+  final case class PGenSettings(faucet: KeyPair, actions: List[PAction])
+
+  final case class UniverseHolder(accounts: List[CreatedAccount] = Nil,
+                                  issuedAssets: List[IssueTransaction] = Nil,
+                                  leases: List[LeaseTransaction] = Nil)
+
+  def mk(settings: PGenSettings, time: Time): (UniverseHolder, List[Transaction]) = {
+    settings.actions
+      .sortBy(_.priority)(Ordering[Int].reverse)
+      .foldLeft((UniverseHolder(), List.empty[Transaction])) {
+        case ((uni, txs), action) =>
+          action match {
+            case LeaseP(from, to, amount) =>
+              val tx = LeaseTransactionV2
+                .selfSigned(from, amount, Fee, time.correctedTime(), to)
+                .explicitGet()
+              (uni.copy(leases = tx :: uni.leases), tx :: txs)
+
+            case IssueP(assetName, issuer, assetDescription, amount, decimals, reissueable, scriptFile) =>
+              val script = Option(scriptFile)
+                .filter(_.nonEmpty)
+                .map(file => ScriptCompiler.compile(new String(Files.readAllBytes(Paths.get(file)))))
+                .flatMap(_.toOption)
+                .map(_._1)
+
+              val tx = IssueTransactionV2
+                .selfSigned(
+                  AddressScheme.current.chainId,
+                  issuer,
+                  assetName.getBytes("UTF-8"),
+                  assetDescription.getBytes("UTF-8"),
+                  amount,
+                  decimals.toByte,
+                  reissueable,
+                  script,
+                  100000000 + Fee,
+                  time.correctedTime()
+                )
+                .explicitGet()
+              (uni.copy(issuedAssets = tx :: uni.issuedAssets), tx :: txs)
+
+            case CreateAccountP(seed, balance, scriptOption) =>
+              val acc = GeneratorSettings.toKeyPair(seed)
+              val transferTx = TransferTransactionV2
+                .selfSigned(Acryl, settings.faucet, acc, balance, time.correctedTime(), Acryl, Fee, "Generator".getBytes("UTF-8"))
+                .explicitGet()
+              val scriptAndTx = scriptOption.map { file =>
+                val scriptText         = new String(Files.readAllBytes(Paths.get(file)))
+                val Right((script, _)) = ScriptCompiler.compile(scriptText)
+                val Right(tx)          = SetScriptTransaction.selfSigned(acc, Some(script), Fee, time.correctedTime())
+                (script, tx)
+              }
+
+              val addTxs = List(transferTx) ++ scriptAndTx.map(_._2)
+              (uni.copy(accounts = CreatedAccount(acc, balance, scriptAndTx.map(_._1)) :: uni.accounts), addTxs ::: txs)
+          }
+      }
+  }
+
+  private val accountSectionReader = new ValueReader[CreateAccountP] {
+    override def read(config: Config, path: String): CreateAccountP = {
+      val conf = config.getConfig(path)
+
+      val seed    = conf.as[String]("seed")
+      val balance = conf.as[Long]("balance")
+      val scriptFile = conf.as[Option[String]]("script-file").filter(_.nonEmpty)
+
+      CreateAccountP(seed, balance, scriptFile)
+    }
+  }
+
+  private val leasingSectionReader = new ValueReader[LeaseP] {
+    override def read(config: Config, path: String): LeaseP = {
+      val conf = config.getConfig(path)
+
+      val from   = conf.as[String]("from")
+      val to     = conf.as[String]("to")
+      val amount = conf.as[Long]("amount")
+
+      LeaseP(
+        GeneratorSettings.toKeyPair(from),
+        GeneratorSettings.toKeyPair(to),
+        amount
+      )
+    }
+  }
+
+  private val assetSectionReader = new ValueReader[IssueP] {
+    override def read(config: Config, path: String): IssueP = {
+      val conf   = config.getConfig(path)
+      val issuer = GeneratorSettings.toKeyPair(conf.getString("issuer"))
+
+      val name        = conf.as[Option[String]]("name").getOrElse("")
+      val description = conf.as[Option[String]]("description").getOrElse("")
+      val amount      = conf.as[Long]("amount")
+      val decimals    = conf.as[Option[Int]]("decimals").getOrElse(0)
+      val reissuable  = conf.as[Option[Boolean]]("reissuable").getOrElse(false)
+      val scriptFile  = conf.as[Option[String]]("script-file").getOrElse("")
+
+      IssueP(name, issuer, description, amount, decimals, reissuable, scriptFile)
+    }
+  }
+
+  implicit val preconditionsReader = new ValueReader[PGenSettings] {
+    override def read(config: Config, path: String): PGenSettings = {
+      val faucet = GeneratorSettings.toKeyPair(config.as[String](s"$path.faucet"))
+
+      val accounts =
+        config.as[List[CreateAccountP]](s"$path.accounts")(
+          traversableReader(
+            accountSectionReader,
+            implicitly[CanBuildFrom[Nothing, CreateAccountP, List[CreateAccountP]]]
+          )
+        )
+      val assets = config.as[List[IssueP]](s"$path.assets")(
+        traversableReader(
+          assetSectionReader,
+          implicitly[CanBuildFrom[Nothing, IssueP, List[IssueP]]]
+        )
+      )
+      val leases = config.as[List[LeaseP]](s"$path.leases")(
+        traversableReader(
+          leasingSectionReader,
+          implicitly[CanBuildFrom[Nothing, LeaseP, List[LeaseP]]]
+        )
+      )
+
+      val actions = accounts ++ assets ++ leases
+      PGenSettings(faucet, actions)
+    }
+  }
+}

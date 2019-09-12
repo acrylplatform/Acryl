@@ -1,0 +1,155 @@
+package com.acrylplatform.state.diffs.smart.scenarios
+
+import java.nio.charset.StandardCharsets
+
+import com.acrylplatform.account.AddressScheme
+import com.acrylplatform.common.state.ByteStr
+import com.acrylplatform.common.utils.EitherExt2
+import com.acrylplatform.lang.directives.DirectiveSet
+import com.acrylplatform.lang.directives.values._
+import com.acrylplatform.lang.script.v1.ExprScript
+import com.acrylplatform.lang.utils._
+import com.acrylplatform.lang.v1.compiler.ExpressionCompiler
+import com.acrylplatform.lang.v1.compiler.Terms.EVALUATED
+import com.acrylplatform.lang.v1.evaluator.EvaluatorV1
+import com.acrylplatform.lang.v1.evaluator.ctx.EvaluationContext
+import com.acrylplatform.lang.v1.parser.Parser
+import com.acrylplatform.lang.{Global, Testing}
+import com.acrylplatform.state._
+import com.acrylplatform.state.diffs._
+import com.acrylplatform.state.diffs.smart._
+import com.acrylplatform.transaction.Asset.{IssuedAsset, Acryl}
+import com.acrylplatform.transaction.assets.IssueTransactionV2
+import com.acrylplatform.transaction.transfer._
+import com.acrylplatform.transaction.{DataTransaction, GenesisTransaction}
+import com.acrylplatform.{NoShrink, TransactionGen}
+import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
+import org.scalatestplus.scalacheck.{ScalaCheckPropertyChecks => PropertyChecks}
+
+class NotaryControlledTransferScenarioTest extends PropSpec with PropertyChecks with Matchers with TransactionGen with NoShrink {
+  val preconditions: Gen[
+    (Seq[GenesisTransaction], IssueTransactionV2, DataTransaction, TransferTransactionV1, DataTransaction, DataTransaction, TransferTransactionV1)] =
+    for {
+      company  <- accountGen
+      king     <- accountGen
+      notary   <- accountGen
+      accountA <- accountGen
+      accountB <- accountGen
+      ts       <- timestampGen
+      genesis1 = GenesisTransaction.create(company, ENOUGH_AMT, ts).explicitGet()
+      genesis2 = GenesisTransaction.create(king, ENOUGH_AMT, ts).explicitGet()
+      genesis3 = GenesisTransaction.create(notary, ENOUGH_AMT, ts).explicitGet()
+      genesis4 = GenesisTransaction.create(accountA, ENOUGH_AMT, ts).explicitGet()
+      genesis5 = GenesisTransaction.create(accountB, ENOUGH_AMT, ts).explicitGet()
+
+      assetScript = s"""
+                    |
+                    | match tx {
+                    |   case ttx: TransferTransaction =>
+                    |      let king = Address(base58'${king.address}')
+                    |      let company = Address(base58'${company.address}')
+                    |      let notary1 = addressFromPublicKey(extract(getBinary(king, "notary1PK")))
+                    |      let txIdBase58String = toBase58String(ttx.id)
+                    |      let isNotary1Agreed = match getBoolean(notary1,txIdBase58String) {
+                    |        case b : Boolean => b
+                    |        case _ : Unit => false
+                    |      }
+                    |      let recipientAddress = addressFromRecipient(ttx.recipient)
+                    |      let recipientAgreement = getBoolean(recipientAddress,txIdBase58String)
+                    |      let isRecipientAgreed = if(isDefined(recipientAgreement)) then extract(recipientAgreement) else false
+                    |      let senderAddress = addressFromPublicKey(ttx.senderPublicKey)
+                    |      senderAddress.bytes == company.bytes || (isNotary1Agreed && isRecipientAgreed)
+                    |   case other => throw()
+                    | }
+        """.stripMargin
+
+      untypedScript = Parser.parseExpr(assetScript).get.value
+
+      typedScript = ExprScript(ExpressionCompiler(compilerContext(V1, Expression, isAssetScript = false), untypedScript).explicitGet()._1)
+        .explicitGet()
+
+      issueTransaction = IssueTransactionV2
+        .selfSigned(
+          AddressScheme.current.chainId,
+          company,
+          "name".getBytes(StandardCharsets.UTF_8),
+          "description".getBytes(StandardCharsets.UTF_8),
+          100,
+          0,
+          false,
+          Some(typedScript),
+          1000000,
+          ts
+        )
+        .explicitGet()
+
+      assetId = IssuedAsset(issueTransaction.id())
+
+      kingDataTransaction = DataTransaction
+        .selfSigned(king, List(BinaryDataEntry("notary1PK", ByteStr(notary.publicKey))), 1000, ts + 1)
+        .explicitGet()
+
+      transferFromCompanyToA = TransferTransactionV1
+        .selfSigned(assetId, company, accountA, 1, ts + 20, Acryl, 1000, Array.empty)
+        .explicitGet()
+
+      transferFromAToB = TransferTransactionV1
+        .selfSigned(assetId, accountA, accountB, 1, ts + 30, Acryl, 1000, Array.empty)
+        .explicitGet()
+
+      notaryDataTransaction = DataTransaction
+        .selfSigned(notary, List(BooleanDataEntry(transferFromAToB.id().base58, true)), 1000, ts + 4)
+        .explicitGet()
+
+      accountBDataTransaction = DataTransaction
+        .selfSigned(accountB, List(BooleanDataEntry(transferFromAToB.id().base58, true)), 1000, ts + 5)
+        .explicitGet()
+    } yield
+      (Seq(genesis1, genesis2, genesis3, genesis4, genesis5),
+       issueTransaction,
+       kingDataTransaction,
+       transferFromCompanyToA,
+       notaryDataTransaction,
+       accountBDataTransaction,
+       transferFromAToB)
+
+  def dummyEvalContext(version: StdLibVersion): EvaluationContext =
+    lazyContexts(DirectiveSet(V1, Asset, Expression).explicitGet())().evaluationContext
+
+  private def eval(code: String) = {
+    val untyped = Parser.parseExpr(code).get.value
+    val typed   = ExpressionCompiler(compilerContext(V1, Expression, isAssetScript = false), untyped).map(_._1)
+    typed.flatMap(EvaluatorV1[EVALUATED](dummyEvalContext(V1), _))
+  }
+
+  property("Script toBase58String") {
+    val s = "AXiXp5CmwVaq4Tp6h6"
+    eval(s"""toBase58String(base58'$s') == \"$s\"""") shouldBe Testing.evaluated(true)
+  }
+
+  property("Script toBase64String") {
+    val s = "Kl0pIkOM3tRikA=="
+    eval(s"""toBase64String(base64'$s') == \"$s\"""") shouldBe Testing.evaluated(true)
+  }
+
+  property("addressFromString() returns None when address is too long") {
+    val longAddress = "A" * (Global.MaxBase58String + 1)
+    eval(s"""addressFromString("$longAddress")""") shouldBe Left("base58Decode input exceeds 100")
+  }
+
+  property("Scenario") {
+    forAll(preconditions) {
+      case (genesis, issue, kingDataTransaction, transferFromCompanyToA, notaryDataTransaction, accountBDataTransaction, transferFromAToB) =>
+        assertDiffAndState(smartEnabledFS) { append =>
+          append(genesis).explicitGet()
+          append(Seq(issue, kingDataTransaction, transferFromCompanyToA)).explicitGet()
+          append(Seq(transferFromAToB)) should produce("NotAllowedByScript")
+          append(Seq(notaryDataTransaction)).explicitGet()
+          append(Seq(transferFromAToB)) should produce("NotAllowedByScript") //recipient should accept tx
+          append(Seq(accountBDataTransaction)).explicitGet()
+          append(Seq(transferFromAToB)).explicitGet()
+        }
+    }
+  }
+}

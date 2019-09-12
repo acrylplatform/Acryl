@@ -1,0 +1,12 @@
+// Transactions
+syntax = "proto3";
+package acryl;
+option java_package = "com.acrylplatform.protobuf.transaction";
+option csharp_namespace = "Acryl";
+
+message Recipient {
+    oneof recipient {
+        bytes address = 1;
+        string alias = 2;
+    };
+};
