@@ -16,7 +16,7 @@ import scala.util.Random
 class ClientSpec extends FreeSpec with Matchers with MockFactory with TransactionGen {
 
   private val clientHandshake = new Handshake(
-    applicationName = "acrylI",
+    applicationName = "acrylA",
     applicationVersion = Version.VersionTuple,
     nodeName = "test",
     nodeNonce = Random.nextInt(),
