@@ -148,7 +148,7 @@ object InvokeScriptTransactionDiff {
                 .count(blockchain.hasAssetScript) +
                 ps.count(_._3.fold(false)(id => blockchain.hasAssetScript(IssuedAsset(id)))) +
                 (if (blockchain.hasScript(tx.sender)) 1 else 0)
-            val minAcryl = totalScriptsInvoked * ScriptExtraFee + FeeConstants(InvokeScriptTransaction.typeId) * FeeUnit
+            val minAcryl = totalScriptsInvoked * ScriptExtraFee + OldFeeUnits(InvokeScriptTransaction.typeId) * FeeUnit
             val txName   = Constants.TransactionNames(InvokeScriptTransaction.typeId)
             Either.cond(
               minAcryl <= acrylFee,
@@ -164,7 +164,7 @@ object InvokeScriptTransactionDiff {
                 .count(blockchain.hasAssetScript) +
                 ps.count(_._3.fold(false)(id => blockchain.hasAssetScript(IssuedAsset(id)))) +
                 (if (blockchain.hasScript(tx.sender)) { 1 } else { 0 })
-            val minAcryl = totalScriptsInvoked * ScriptExtraFee + FeeConstants(InvokeScriptTransaction.typeId) * FeeUnit
+            val minAcryl = totalScriptsInvoked * ScriptExtraFee + OldFeeUnits(InvokeScriptTransaction.typeId) * FeeUnit
             Either.cond(
               minAcryl <= acrylFee,
               totalScriptsInvoked,
