@@ -32,7 +32,6 @@ import com.acrylplatform.transaction.smart.InvokeScriptTransaction.Payment
 import com.acrylplatform.transaction.smart.script.trace.{AssetVerifierTrace, InvokeScriptTrace}
 import com.acrylplatform.transaction.smart.{InvokeScriptTransaction, SetScriptTransaction, AcrylEnvironment}
 import com.acrylplatform.transaction.transfer.TransferTransactionV2
-import com.acrylplatform.transaction.{Asset, CreateAliasTransaction, GenesisTransaction, Proofs, Transaction}
 import com.acrylplatform.utils.EmptyBlockchain
 import com.acrylplatform.{NoShrink, TransactionGen, WithDB}
 import monix.eval.Coeval
