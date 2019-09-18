@@ -5,7 +5,7 @@ import com.acrylplatform.it.NodeConfigs
 import com.acrylplatform.it.api.SyncHttpApi._
 import com.acrylplatform.it.transactions.NodesFromDocker
 import com.acrylplatform.state.Sponsorship
-import com.acrylplatform.state.diffs.CommonValidation
+import com.acrylplatform.state.diffs.FeeValidation
 import com.acrylplatform.utils.ScorexLogging
 import org.scalatest.{CancelAfterFailure, FreeSpec, Matchers}
 
@@ -52,7 +52,7 @@ class MicroblocksSponsoredFeeTestSuite extends FreeSpec with Matchers with Cance
         .withFilter(t => t._1.transactionCount != t._2.transactionCount)
         .map(_._1) :+ blockHeadersSeq.last
 
-      val filteredBlocksFee        = filteredBlocks.map(b => b.transactionCount * CommonValidation.FeeUnit * SmallFee / minSponsorFee)
+      val filteredBlocksFee        = filteredBlocks.map(b => b.transactionCount * FeeValidation.FeeUnit * SmallFee / minSponsorFee)
       val minerBalances: Seq[Long] = filteredBlocks.map(b => notMiner.debugStateAt(b.height)(b.generator))
 
       minerBalances.zip(filteredBlocksFee).sliding(2).foreach {
@@ -60,7 +60,7 @@ class MicroblocksSponsoredFeeTestSuite extends FreeSpec with Matchers with Cance
           minerBalance2 should be(minerBalance1 + blockFee1 * 6 / 10 + blockFee2 * 4 / 10)
       }
 
-      val block = notMiner.blockAt(height)
+      val block   = notMiner.blockAt(height)
       val realFee = block.transactions.map(tx => Sponsorship.toAcryl(tx.fee, Token)).sum
       blockHeadersSeq(1).totalFee shouldBe realFee
     }

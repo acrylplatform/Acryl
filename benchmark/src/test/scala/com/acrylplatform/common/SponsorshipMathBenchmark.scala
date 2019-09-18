@@ -1,7 +1,7 @@
 package com.acrylplatform.common
 import java.util.concurrent.TimeUnit
 
-import com.acrylplatform.state.diffs.CommonValidation
+import com.acrylplatform.state.diffs.FeeValidation
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
@@ -15,7 +15,7 @@ class SponsorshipMathBenchmark {
   @Benchmark
   def bigDecimal_test(bh: Blackhole): Unit = {
     def toAcryl(assetFee: Long, sponsorship: Long): Long = {
-      val acryl = (BigDecimal(assetFee) * BigDecimal(CommonValidation.FeeUnit)) / BigDecimal(sponsorship)
+      val acryl = (BigDecimal(assetFee) * BigDecimal(FeeValidation.FeeUnit)) / BigDecimal(sponsorship)
       if (acryl > Long.MaxValue) {
         throw new java.lang.ArithmeticException("Overflow")
       }
@@ -28,7 +28,7 @@ class SponsorshipMathBenchmark {
   @Benchmark
   def bigInt_test(bh: Blackhole): Unit = {
     def toAcryl(assetFee: Long, sponsorship: Long): Long = {
-      val acryl = BigInt(assetFee) * CommonValidation.FeeUnit / sponsorship
+      val acryl = BigInt(assetFee) * FeeValidation.FeeUnit / sponsorship
       acryl.bigInteger.longValueExact()
     }
 

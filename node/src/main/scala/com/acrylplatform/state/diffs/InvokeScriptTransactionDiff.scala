@@ -19,8 +19,10 @@ import com.acrylplatform.lang.v1.evaluator.{ContractEvaluator, LogItem, ScriptRe
 import com.acrylplatform.lang.v1.traits.domain.Tx.ScriptTransfer
 import com.acrylplatform.lang.v1.traits.domain.{DataItem, Recipient}
 import com.acrylplatform.metrics._
+import com.acrylplatform.settings.Constants
 import com.acrylplatform.state._
 import com.acrylplatform.state.diffs.CommonValidation._
+import com.acrylplatform.state.diffs.FeeValidation._
 import com.acrylplatform.state.reader.CompositeBlockchain
 import com.acrylplatform.transaction.Asset
 import com.acrylplatform.transaction.Asset.{IssuedAsset, Acryl}
@@ -147,11 +149,12 @@ object InvokeScriptTransactionDiff {
                 ps.count(_._3.fold(false)(id => blockchain.hasAssetScript(IssuedAsset(id)))) +
                 (if (blockchain.hasScript(tx.sender)) 1 else 0)
             val minAcryl = totalScriptsInvoked * ScriptExtraFee + FeeConstants(InvokeScriptTransaction.typeId) * FeeUnit
+            val txName   = Constants.TransactionNames(InvokeScriptTransaction.typeId)
             Either.cond(
               minAcryl <= acrylFee,
               (),
               GenericError(s"Fee in ${tx.assetFee._1
-                .fold("ACRYL")(_.toString)} for ${tx.builder.classTag} with $totalScriptsInvoked total scripts invoked does not exceed minimal value of $minAcryl ACRYL: ${tx.assetFee._2}")
+                .fold("ACRYL")(_.toString)} for $txName with $totalScriptsInvoked total scripts invoked does not exceed minimal value of $minAcryl ACRYL: ${tx.assetFee._2}")
             )
           }
           scriptsInvoked <- TracedResult {
@@ -196,9 +199,9 @@ object InvokeScriptTransactionDiff {
           val isr = InvokeScriptResult(data = dataEntries, transfers = paymentReceiversMap.toVector.flatMap {
             case (addr, pf) => InvokeScriptResult.paymentsFromPortfolio(addr, pf)
           })
-          val dataAndPaymentDiffTx = dataAndPaymentDiff.transactions(tx.id())
+          val dataAndPaymentDiffTx              = dataAndPaymentDiff.transactions(tx.id())
           val dataAndPaymentDiffTxWithTransfers = dataAndPaymentDiffTx.copy(_3 = dataAndPaymentDiffTx._3 ++ transfers.keys)
-          val transferSetDiff = Diff.stateOps(portfolios = transfers, scriptResults = Map(tx.id() -> isr))
+          val transferSetDiff                   = Diff.stateOps(portfolios = transfers, scriptResults = Map(tx.id() -> isr))
           dataAndPaymentDiff.copy(
             transactions = dataAndPaymentDiff.transactions.updated(tx.id(), dataAndPaymentDiffTxWithTransfers),
             scriptsRun = scriptsInvoked + 1,

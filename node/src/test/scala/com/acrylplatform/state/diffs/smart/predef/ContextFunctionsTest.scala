@@ -20,7 +20,7 @@ import com.acrylplatform.lang.v1.{FunctionHeader, compiler}
 import com.acrylplatform.lang.{Global, utils}
 import com.acrylplatform.state._
 import com.acrylplatform.state.diffs.smart.smartEnabledFS
-import com.acrylplatform.state.diffs.{CommonValidation, ENOUGH_AMT, assertDiffAndState}
+import com.acrylplatform.state.diffs.{ENOUGH_AMT, FeeValidation, assertDiffAndState}
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.{DataTransaction, GenesisTransaction}
 import com.acrylplatform.transaction.assets.IssueTransactionV2
@@ -467,8 +467,8 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
           }
 
           val compiledScript = ContractScript(V3, compiler.ContractCompiler(ctx.compilerContext, expr).explicitGet()).explicitGet()
-          val setScriptTx = SetScriptTransaction.selfSigned(masterAcc, Some(compiledScript), 1000000L, transferTx.timestamp + 5).explicitGet()
-          val fc = Terms.FUNCTION_CALL(FunctionHeader.User("compareBlocks"), List.empty)
+          val setScriptTx    = SetScriptTransaction.selfSigned(masterAcc, Some(compiledScript), 1000000L, transferTx.timestamp + 5).explicitGet()
+          val fc             = Terms.FUNCTION_CALL(FunctionHeader.User("compareBlocks"), List.empty)
 
           val ci = InvokeScriptTransaction
             .selfSigned(
@@ -476,7 +476,7 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
               masterAcc,
               Some(fc),
               Seq.empty,
-              CommonValidation.FeeUnit * (CommonValidation.FeeConstants(InvokeScriptTransaction.typeId) + CommonValidation.ScriptExtraFee),
+              FeeValidation.FeeUnit * (FeeValidation.FeeConstants(InvokeScriptTransaction.typeId) + FeeValidation.ScriptExtraFee),
               Acryl,
               System.currentTimeMillis()
             )
