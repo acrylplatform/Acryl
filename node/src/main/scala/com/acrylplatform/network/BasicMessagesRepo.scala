@@ -30,19 +30,22 @@ object GetPeersSpec extends MessageSpec[GetPeers.type] {
 }
 
 object PeersSpec extends MessageSpec[KnownPeers] {
-  private val AddressLength = 4
-  private val PortLength    = 4
-  private val DataLength    = 4
+  private val AddressLengthIPv4 = 4
+  private val AddressLengthIPv6 = 16
+  private val PortLength        = 4
+  private val DataLength        = 4
 
   override val messageCode: Message.MessageCode = 2: Byte
 
-  override val maxLength: Int = DataLength + 1000 * (AddressLength + PortLength)
+  override val maxLength: Int = DataLength + 1000 * (AddressLengthIPv6 + PortLength)
 
   override def deserializeData(bytes: Array[Byte]): Try[KnownPeers] = Try {
     val lengthBytes = util.Arrays.copyOfRange(bytes, 0, DataLength)
     val length      = Ints.fromByteArray(lengthBytes)
 
-    assert(bytes.length == DataLength + (length * (AddressLength + PortLength)), "Data does not match length")
+    assert(bytes.length == DataLength + (length * (AddressLengthIPv4 + PortLength)) || bytes.length == DataLength + (length * (AddressLengthIPv6 + PortLength)), "Data does not match length")
+
+    val AddressLength = ((bytes.length - DataLength) / length) - PortLength
 
     KnownPeers((0 until length).map { i =>
       val position     = lengthBytes.length + (i * (AddressLength + PortLength))
