@@ -19,7 +19,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           1,
           Acryl,
@@ -31,7 +31,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
       TransferTransactionV1
         .selfSigned(Acryl,
                     KeyPair(Array.fill(32)(0: Byte)),
-                    Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+                    Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
                     100000,
                     2,
                     Acryl,
@@ -42,7 +42,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
       TransferTransactionV1
         .selfSigned(Acryl,
                     KeyPair(Array.fill(32)(0: Byte)),
-                    Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+                    Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
                     100000,
                     1,
                     Acryl,
@@ -54,7 +54,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           2,
           Asset.fromCompatId(Some(ByteStr.empty)),
@@ -67,7 +67,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           1,
           Asset.fromCompatId(Some(ByteStr.empty)),
@@ -89,7 +89,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           1,
           Acryl,
@@ -102,7 +102,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           1,
           Acryl,
@@ -115,7 +115,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           2,
           Acryl,
@@ -128,7 +128,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           1,
           Asset.fromCompatId(Some(ByteStr.empty)),
@@ -141,7 +141,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           2,
           Asset.fromCompatId(Some(ByteStr.empty)),
@@ -163,7 +163,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           124L,
           Acryl,
@@ -176,7 +176,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           123L,
           Acryl,
@@ -196,7 +196,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           123L,
           Acryl,
@@ -209,7 +209,7 @@ class TransactionsOrderingSpecification extends PropSpec with Assertions with Ma
         .selfSigned(
           Acryl,
           KeyPair(Array.fill(32)(0: Byte)),
-          Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU").explicitGet(),
+          Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
           100000,
           124L,
           Acryl,

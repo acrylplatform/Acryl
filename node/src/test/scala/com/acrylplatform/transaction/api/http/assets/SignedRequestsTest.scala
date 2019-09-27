@@ -78,7 +78,7 @@ class SignedRequestsTest extends FunSuite with Matchers {
     val json =
       """
         |{
-        |   "recipient":"3Myss6gmMckKYtka3cKCM563TBJofnxvfD7",
+        |   "recipient":"3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
         |   "timestamp":1479462208828,
         |   "assetId":"GAXAj8T4pSjunDqpz6Q3bit4fJJN9PD4t8AK8JZVSa5u",
         |   "amount":100000,
@@ -89,7 +89,7 @@ class SignedRequestsTest extends FunSuite with Matchers {
         |}
       """.stripMargin
     val req = Json.parse(json).validate[SignedTransferV1Request].get
-    req.recipient shouldBe "3Myss6gmMckKYtka3cKCM563TBJofnxvfD7"
+    req.recipient shouldBe "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB"
     req.timestamp shouldBe 1479462208828L
     req.assetId shouldBe Some("GAXAj8T4pSjunDqpz6Q3bit4fJJN9PD4t8AK8JZVSa5u")
     req.amount shouldBe 100000
@@ -113,7 +113,7 @@ class SignedRequestsTest extends FunSuite with Matchers {
       """
         |{
         |   "senderPublicKey":"FJuErRxhV9JaFUwcYLabFK5ENvDRfyJbRz8FeVfYpBLn",
-        |   "recipient":"3N9UuGeWuDt9NfWbC5oEACHyRoeEMApXAeq",
+        |   "recipient":"3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
         |   "timestamp":1489054107569,
         |   "assetId":"6MPKrD5B7GrfbciHECg1MwdvRUhRETApgNZspreBJ8JL",
         |   "amount":1000,
@@ -124,7 +124,7 @@ class SignedRequestsTest extends FunSuite with Matchers {
         |}
       """.stripMargin
     val req = Json.parse(json).validate[SignedTransferV1Request].get
-    req.recipient shouldBe "3N9UuGeWuDt9NfWbC5oEACHyRoeEMApXAeq"
+    req.recipient shouldBe "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB"
     req.timestamp shouldBe 1489054107569L
     req.assetId shouldBe Some("6MPKrD5B7GrfbciHECg1MwdvRUhRETApgNZspreBJ8JL")
     req.feeAssetId shouldBe Some("6MPKrD5B7GrfbciHECg1MwdvRUhRETApgNZspreBJ8JL")

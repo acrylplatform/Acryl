@@ -41,7 +41,7 @@ class FunctionComplexityTest extends PropSpec with PropertyChecks with Matchers 
           CryptoContext.build(Global, V1),
           AcrylContext.build(
             DirectiveSet(V1, Account, Expression).explicitGet(),
-            new AcrylEnvironment('T'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???)),
+            new AcrylEnvironment('K'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???)),
           )
         ))
   }
@@ -55,7 +55,7 @@ class FunctionComplexityTest extends PropSpec with PropertyChecks with Matchers 
           CryptoContext.build(Global, V2),
           AcrylContext.build(
             DirectiveSet(V2, Account, Expression).explicitGet(),
-            new AcrylEnvironment('T'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
+            new AcrylEnvironment('K'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
           )
         ))
   }
@@ -69,7 +69,7 @@ class FunctionComplexityTest extends PropSpec with PropertyChecks with Matchers 
           CryptoContext.build(Global, V3),
           AcrylContext.build(
             DirectiveSet(V3, Account, Expression).explicitGet(),
-            new AcrylEnvironment('T'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
+            new AcrylEnvironment('K'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
           )
         ))
   }
@@ -95,7 +95,7 @@ class FunctionComplexityTest extends PropSpec with PropertyChecks with Matchers 
       .create(
         Acryl,
         PublicKey.fromBase58String("FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z").right.get,
-        Address.fromString("3My3KZgFQ3CrVHgz6vGRt8687sH4oAA1qp8").right.get,
+        Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").right.get,
         100000000,
         1526641218066L,
         Acryl,

@@ -41,7 +41,7 @@ class SponsorFeeTransactionSpecification extends PropSpec with PropertyChecks wi
     val js = Json.parse(s"""{
  "type": 14,
  "id": "Gobt7AiyQAfduRkW8Mk3naWbzH67Zsv9rdmgRNmon1Mb",
- "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+ "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
  "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
  "fee": $One,
  "feeAssetId": null,
@@ -73,7 +73,7 @@ class SponsorFeeTransactionSpecification extends PropSpec with PropertyChecks wi
     val js = Json.parse(s"""{
  "type": 14,
  "id": "HsEHzgJEkmjy2aenmbNVFrK1Na9rz4V4p7o2fY9eB9za",
- "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+ "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
  "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
  "fee": $One,
  "feeAssetId":null,

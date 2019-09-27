@@ -21,7 +21,7 @@ class TraceResultJsonTest extends PropSpec with Matchers {
   private val tx = (
     for {
       publicKey <- PublicKey.fromBase58String("9utotH1484Hb1WdAHuAKLjuGAmocPZg7jZDtnc35MuqT")
-      address   <- Address.fromString("3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU")
+      address   <- Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB")
       proof     <- ByteStr.decodeBase58("4scXzk4WiKMXG8p7V6J2pmznNZCgMjADbbZPSDGg28YLMKgshBmNFNzgYg2TwfKN3wMtgLiNQB77iQQZkH3roUyJ").toEither
       tx <- InvokeScriptTransaction.create(
         sender = publicKey,
@@ -67,7 +67,7 @@ class TraceResultJsonTest extends PropSpec with Matchers {
         |    } ]
         |  },
         |  "trace" : [ {
-        |    "dApp" : "3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU",
+        |    "dApp" : "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
         |    "function" : "func",
         |    "args" : [ "param", "1" ],
         |    "result" : {
@@ -76,21 +76,21 @@ class TraceResultJsonTest extends PropSpec with Matchers {
         |        "value" : "700000000"
         |      } ],
         |      "transfers" : [ {
-        |        "address" : "3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU",
+        |        "address" : "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
         |        "amount" : 1,
         |        "assetId" : null
         |      } ]
         |    }
         |  } ],
-        |  "dApp" : "3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU",
-        |  "sender" : "3MvtiFpnSA7uYKXV3myLwRK3u2NEV91iJYW",
+        |  "dApp" : "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
+        |  "sender" : "3JJrHPr6qmVjexdEGZCM54BbpMpuzhpzRSL",
         |  "feeAssetId" : null,
         |  "proofs" : [ "4scXzk4WiKMXG8p7V6J2pmznNZCgMjADbbZPSDGg28YLMKgshBmNFNzgYg2TwfKN3wMtgLiNQB77iQQZkH3roUyJ" ],
         |  "payment" : [ {
         |    "amount" : 1,
         |    "assetId" : null
         |  } ],
-        |  "id" : "2hoMeTHAneLExjFo2a9ei7D4co5zzr9VyT7tmBmAGmeu",
+        |  "id" : "5qinNSAgmnTL4kVEULrU8P3nctKZRdvuF23BuHKYdJKC",
         |  "timestamp" : 1111
         |}""".stripMargin
   }
@@ -115,7 +115,7 @@ class TraceResultJsonTest extends PropSpec with Matchers {
     Json.prettyPrint(result.json) shouldBe
       """{
       |  "trace" : [ {
-      |    "dApp" : "3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU",
+      |    "dApp" : "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
       |    "function" : "func",
       |    "args" : [ "param", "1" ],
       |    "error" : {
@@ -144,8 +144,8 @@ class TraceResultJsonTest extends PropSpec with Matchers {
       |        "value" : 1
       |      } ]
       |    },
-      |    "dApp" : "3MydsP4UeQdGwBq7yDbMvf9MzfB2pxFoUKU",
-      |    "sender" : "3MvtiFpnSA7uYKXV3myLwRK3u2NEV91iJYW",
+      |    "dApp" : "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
+      |    "sender" : "3JJrHPr6qmVjexdEGZCM54BbpMpuzhpzRSL",
       |    "feeAssetId" : null,
       |    "proofs" : [ "4scXzk4WiKMXG8p7V6J2pmznNZCgMjADbbZPSDGg28YLMKgshBmNFNzgYg2TwfKN3wMtgLiNQB77iQQZkH3roUyJ" ],
       |    "fee" : 10000000,
@@ -153,7 +153,7 @@ class TraceResultJsonTest extends PropSpec with Matchers {
       |      "amount" : 1,
       |      "assetId" : null
       |    } ],
-      |    "id" : "2hoMeTHAneLExjFo2a9ei7D4co5zzr9VyT7tmBmAGmeu",
+      |    "id" : "5qinNSAgmnTL4kVEULrU8P3nctKZRdvuF23BuHKYdJKC",
       |    "type" : 16,
       |    "version" : 1,
       |    "timestamp" : 1111

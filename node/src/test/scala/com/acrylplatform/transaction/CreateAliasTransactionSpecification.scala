@@ -36,8 +36,8 @@ class CreateAliasTransactionSpecification extends PropSpec with PropertyChecks w
   property("JSON format validation for CreateAliasTransactionV1") {
     val js = Json.parse("""{
                          "type": 10,
-                         "id": "7acjQQWJAharrgzb4Z6jo3eeAKAGPmLkHTPtvBTKaiug",
-                         "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                         "id": "Fo7MG957ZC7m8Qn6vZf7Q3BboCchQ94at1yh6LLgFAqZ",
+                         "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                          "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                          "fee": 100000,
                          "feeAssetId": null,
@@ -66,8 +66,8 @@ class CreateAliasTransactionSpecification extends PropSpec with PropertyChecks w
   property("JSON format validation for CreateAliasTransactionV2") {
     val js = Json.parse("""{
                        "type": 10,
-                       "id": "7acjQQWJAharrgzb4Z6jo3eeAKAGPmLkHTPtvBTKaiug",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "id": "Fo7MG957ZC7m8Qn6vZf7Q3BboCchQ94at1yh6LLgFAqZ",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 100000,
                        "feeAssetId": null,

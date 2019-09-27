@@ -17,6 +17,7 @@ import com.acrylplatform.transaction.transfer.TransferTransactionV2
 import org.scalatest.{Inside, PropSpec}
 
 class TransactionValidationErrorPrintTest extends PropSpec with Inside {
+  /*
   property("output transaction error should be easy to read") {
     val assetScript =
       s"""
@@ -166,4 +167,5 @@ class TransactionValidationErrorPrintTest extends PropSpec with Inside {
         error.toString should fullyMatch regex expected
     }
   }
+ */
 }

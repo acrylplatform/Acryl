@@ -37,8 +37,8 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
   property("JSON format validation for LeaseTransactionV1") {
     val js = Json.parse("""{
                        "type": 8,
-                       "id": "EXhjYjy8a1dURbttrGzfcft7cddDnPnoa3vqaBLCTFVY",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "id": "6GVDpoBoVtC6FDNjnDB5ZjtWdYJMvuNsPfXyhbDbCMcy",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 1000000,
                        "feeAssetId": null,
@@ -47,7 +47,7 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
                        "proofs": ["iy3TmfbFds7pc9cDDqfjEJhfhVyNtm3GcxoVz8L3kJFvgRPUmiqqKLMeJGYyN12AhaQ6HvE7aF1tFgaAoCCgNJJ"],
                        "version": 1,
                        "amount": 10000000,
-                       "recipient": "3NCBMxgdghg4tUhEEffSXy11L6hUi6fcBpd"
+                       "recipient": "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB"
                        }
     """)
 
@@ -57,7 +57,7 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
         10000000,
         1000000,
         1526646300260L,
-        Address.fromString("3NCBMxgdghg4tUhEEffSXy11L6hUi6fcBpd").explicitGet(),
+        Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
         ByteStr.decodeBase58("iy3TmfbFds7pc9cDDqfjEJhfhVyNtm3GcxoVz8L3kJFvgRPUmiqqKLMeJGYyN12AhaQ6HvE7aF1tFgaAoCCgNJJ").get
       )
       .right
@@ -69,8 +69,8 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
   property("JSON format validation for LeaseTransactionV2") {
     val js = Json.parse("""{
                         "type": 8,
-                        "id": "UL85wuJDXXe6BtQUob4KNb72kTaf8RN9Gp1NajvGMeU",
-                        "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                        "id": "KVJUzauo8X3tjFq4PSjgby7zyrnwcP4qtBwpEaDnqx6",
+                        "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                         "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                         "fee": 1000000,
                         "feeAssetId": null,
@@ -80,7 +80,7 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
                         ],
                         "version": 2,
                         "amount": 10000000,
-                        "recipient": "3NCBMxgdghg4tUhEEffSXy11L6hUi6fcBpd"
+                        "recipient": "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB"
                        }
     """)
 
@@ -90,7 +90,7 @@ class LeaseTransactionSpecification extends PropSpec with PropertyChecks with Ma
         10000000,
         1000000,
         1526646497465L,
-        Address.fromString("3NCBMxgdghg4tUhEEffSXy11L6hUi6fcBpd").explicitGet(),
+        Address.fromString("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB").explicitGet(),
         Proofs(Seq(ByteStr.decodeBase58("5Fr3yLwvfKGDsFLi8A8JbHqToHDojrPbdEGx9mrwbeVWWoiDY5pRqS3rcX1rXC9ud52vuxVdBmGyGk5krcgwFu9q").get))
       )
       .right
