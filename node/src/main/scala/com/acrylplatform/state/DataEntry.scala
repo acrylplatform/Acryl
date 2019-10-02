@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import com.google.common.primitives.{Bytes, Longs, Shorts}
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.serialization.Deser
-import com.acrylplatform.state.DataEntry._
+import com.acrylplatform.state.DataEntry.{Type, _}
 import io.swagger.annotations.ApiModelProperty
 import play.api.libs.json._
 
@@ -33,14 +33,14 @@ object DataEntry {
 
   type DataBytesOpt = Option[Array[Byte]]
 
-  val MaxKeySize: Byte = 100
-  val MaxValueSize     = Short.MaxValue
+  val MaxKeySize: Byte    = 100
+  val MaxValueSize: Short = Short.MaxValue
 
   object Type extends Enumeration {
-    val Integer = Value(0)
-    val Boolean = Value(1)
-    val Binary  = Value(2)
-    val String  = Value(3)
+    val Integer: Type.Value = Value(0)
+    val Boolean: Type.Value = Value(1)
+    val Binary: Type.Value  = Value(2)
+    val String: Type.Value  = Value(3)
   }
 
   def parse(bytes: Array[Byte], p: Int): (DataEntry[_], Int) = {
@@ -58,8 +58,8 @@ object DataEntry {
         (BinaryDataEntry(key, ByteStr(blob)), p1)
 
       case t if t == Type.String.id =>
-        val (blob, p1)            = Deser.parseArrayWithLength(bytes, p + 1)
-        implicit val dataBytesOpt: DataBytesOpt = Some(bytes.slice(p - 2 - key.getBytes("UTF-8").length, p1))      //all bytes of this data entry
+        val (blob, p1)                          = Deser.parseArrayWithLength(bytes, p + 1)
+        implicit val dataBytesOpt: DataBytesOpt = Some(bytes.slice(p - 2 - key.getBytes("UTF-8").length, p1)) //all bytes of this data entry
         (StringDataEntry(key, new String(blob, UTF_8)), p1)
       case t => throw new Exception(s"Unknown type $t")
     }

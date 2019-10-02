@@ -110,7 +110,7 @@ case object EmptyBlockchain extends Blockchain {
                                          height: Int,
                                          count: Int,
                                          fromAddress: Option[Address]): Either[ValidationError, AssetDistributionPage] =
-    Right(AssetDistributionPage(Paged[Address, AssetDistribution](false, None, Monoid.empty[AssetDistribution])))
+    Right(AssetDistributionPage(Paged[Address, AssetDistribution](hasNext = false, None, Monoid.empty[AssetDistribution])))
 
   /** Builds a new portfolio map by applying a partial function to all portfolios on which the function is defined.
     *

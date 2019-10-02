@@ -14,7 +14,7 @@ import com.acrylplatform.transaction.TxValidationError._
 import com.acrylplatform.transaction._
 import com.acrylplatform.transaction.description._
 import monix.eval.Coeval
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 
 import scala.util.Try
 
@@ -37,7 +37,8 @@ case class SetScriptTransaction private (chainId: Byte, sender: PublicKey, scrip
     )
 
   override val assetFee: (Asset, Long) = (Acryl, fee)
-  override val json                    = Coeval.evalOnce(jsonBase() ++ Json.obj("chainId" -> chainId, "version" -> version, "script" -> script.map(_.bytes().base64)))
+  override val json: Coeval[JsObject] =
+    Coeval.evalOnce(jsonBase() ++ Json.obj("chainId" -> chainId, "version" -> version, "script" -> script.map(_.bytes().base64)))
 
   override val bytes: Coeval[Array[Byte]] = Coeval.evalOnce(Bytes.concat(Array(0: Byte), bodyBytes(), proofs.bytes()))
   override def version: Byte              = 1

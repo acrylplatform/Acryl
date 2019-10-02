@@ -40,7 +40,7 @@ trait Order extends BytesSerializable with JsonSerializable with Proven {
   import Order._
 
   @ApiModelProperty(hidden = true)
-  val sender = senderPublicKey
+  val sender: PublicKey = senderPublicKey
 
   @ApiModelProperty(hidden = true)
   def isValid(atTime: Long): Validation = {

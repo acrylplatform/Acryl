@@ -3,7 +3,7 @@ package com.acrylplatform.state
 import java.util.concurrent.TimeUnit
 
 import cats.kernel.Monoid
-import com.google.common.cache.CacheBuilder
+import com.google.common.cache.{Cache, CacheBuilder}
 import com.acrylplatform.block.Block.BlockId
 import com.acrylplatform.block.{Block, MicroBlock}
 import com.acrylplatform.common.state.ByteStr
@@ -126,13 +126,13 @@ class NgState(val base: Block, val baseBlockDiff: Diff, val baseBlockCarry: Long
     )
 
   private[this] object internalCaches {
-    val blockDiffCache = CacheBuilder
+    val blockDiffCache: Cache[BlockId, (Diff, Long, Long)] = CacheBuilder
       .newBuilder()
       .maximumSize(MaxTotalDiffs)
       .expireAfterWrite(10, TimeUnit.MINUTES)
       .build[BlockId, (Diff, Long, Long)]()
 
-    val forgedBlockCache = CacheBuilder
+    val forgedBlockCache: Cache[BlockId, Option[(Block, DiscardedMicroBlocks)]] = CacheBuilder
       .newBuilder()
       .maximumSize(MaxTotalDiffs)
       .expireAfterWrite(10, TimeUnit.MINUTES)

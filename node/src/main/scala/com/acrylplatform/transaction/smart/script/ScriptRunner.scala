@@ -33,7 +33,7 @@ object ScriptRunner {
           Coeval.evalOnce(height),
           blockchain,
           isAssetScript,
-          false,
+          isContract = false,
           Coeval(scriptContainerAddress)
         )
         EvaluatorV1.applyWithLogging[EVALUATED](ctx, s.expr)
@@ -45,7 +45,7 @@ object ScriptRunner {
           Coeval.evalOnce(height),
           blockchain,
           isAssetScript,
-          true,
+          isContract = true,
           Coeval(scriptContainerAddress)
         )
         val evalContract = in.eliminate(

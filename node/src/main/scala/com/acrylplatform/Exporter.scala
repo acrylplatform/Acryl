@@ -22,12 +22,12 @@ object Exporter extends ScorexLogging {
     val Protobuf = "PROTOBUF"
     val Json     = "JSON"
 
-    def list         = Seq(Binary, Protobuf, Json)
-    def importerList = Seq(Binary, Protobuf)
-    def default      = Binary
+    def list: Seq[String]         = Seq(Binary, Protobuf, Json)
+    def importerList: Seq[String] = Seq(Binary, Protobuf)
+    def default: String           = Binary
 
-    def isSupported(f: String)           = list.contains(f.toUpperCase)
-    def isSupportedInImporter(f: String) = importerList.contains(f.toUpperCase)
+    def isSupported(f: String): Boolean           = list.contains(f.toUpperCase)
+    def isSupportedInImporter(f: String): Boolean = importerList.contains(f.toUpperCase)
   }
 
   //noinspection ScalaStyle

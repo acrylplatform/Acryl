@@ -33,8 +33,8 @@ case object Validation {
 
   implicit def fromEi[A](ei: Either[String, Unit]): Validation =
     ei match {
-      case Left(err) => Validation(false, Set(err))
-      case Right(_)  => Validation(true)
+      case Left(err) => Validation(status = false, Set(err))
+      case Right(_)  => Validation(status = true)
     }
 
   val success             = Validation(status = true)
