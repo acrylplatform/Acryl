@@ -19,12 +19,12 @@ sealed trait Address extends AddressOrAlias {
 
 //noinspection ScalaDeprecation
 object Address extends ScorexLogging {
-  val Prefix               = "address:"
-  val AddressVersion: Byte = 1
-  val ChecksumLength       = 4
-  val HashLength           = 20
-  val AddressLength        = 1 + 1 + HashLength + ChecksumLength
-  val AddressStringLength  = base58Length(AddressLength)
+  val Prefix                   = "address:"
+  val AddressVersion: Byte     = 1
+  val ChecksumLength           = 4
+  val HashLength               = 20
+  val AddressLength: Int       = 1 + 1 + HashLength + ChecksumLength
+  val AddressStringLength: Int = base58Length(AddressLength)
 
   private[this] val publicKeyBytesCache: Cache[ByteStr, Address] = CacheBuilder
     .newBuilder()
@@ -70,7 +70,7 @@ object Address extends ScorexLogging {
           )
           .right
           .flatMap {
-            res =>
+            _ =>
               val Array(version, network, _*) = addressBytes.arr
 
               (for {

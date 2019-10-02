@@ -34,7 +34,7 @@ class PoSSelector(blockchain: Blockchain, blockchainSettings: BlockchainSettings
     val bt = pos(height).calculateBaseTarget(targetBlockDelay.toSeconds, height, refBlockBT, refBlockTS, greatGrandParentTS, currentTime)
 
     checkBaseTargetLimit(bt, height).flatMap(
-      result =>
+      _ =>
         blockchain.lastBlock
           .map(_.consensusData.generationSignature.arr)
           .map(gs => NxtLikeConsensusBlockData(bt, ByteStr(generatorSignature(gs, accountPublicKey))))

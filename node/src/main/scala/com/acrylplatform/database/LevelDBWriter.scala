@@ -126,7 +126,7 @@ class LevelDBWriter(writableDB: DB, spendableBalanceChanged: Observer[(Address, 
 
   override def carryFee: Long = readOnly(_.get(Keys.carryFee(height)))
 
-  override def accountData(address: Address): AccountDataInfo = readOnly { db =>
+  override def accountData(address: Address): AccountDataInfo = readOnly { _ =>
     AccountDataInfo((for {
       key   <- accountDataKeys(address)
       value <- accountData(address, key)

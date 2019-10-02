@@ -271,7 +271,7 @@ abstract class Caches(spendableBalanceChanged: Observer[(Address, Asset)]) exten
     val addressTransactions: Map[AddressId, List[TransactionId]] =
       transactionList
         .flatMap {
-          case (_, (h, tx, addrs)) =>
+          case (_, (_, tx, addrs)) =>
             transactionIds.put(tx.id(), newHeight) // be careful here!
 
             addrs.map { addr =>

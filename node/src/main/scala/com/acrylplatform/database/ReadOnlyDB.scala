@@ -25,7 +25,7 @@ class ReadOnlyDB(db: DB, readOptions: ReadOptions) {
 
   def iterateOver(prefix: Short)(f: DBEntry => Unit): Unit = db.iterateOver(prefix)(f)
 
-  def iterateOver(prefix: Array[Byte])(f: DBEntry => Unit) = db.iterateOver(prefix)(f)
+  def iterateOver(prefix: Array[Byte])(f: DBEntry => Unit): Unit = db.iterateOver(prefix)(f)
 
   def iterateOverStream(): CloseableIterator[DBEntry] = db.iterateOverStream()
 

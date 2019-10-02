@@ -26,7 +26,7 @@ package object database {
   final type DBEntry = JMap.Entry[Array[Byte], Array[Byte]]
 
   implicit class ByteArrayDataOutputExt(val output: ByteArrayDataOutput) extends AnyVal {
-    def writeByteStr(s: ByteStr) = {
+    def writeByteStr(s: ByteStr): Unit = {
       output.write(s.arr)
     }
 
@@ -181,7 +181,7 @@ package object database {
 
   def readTransactionHeight(data: Array[Byte]): Int = Ints.fromByteArray(data)
 
-  def writeTransactionInfo(txInfo: (Int, Transaction)) = {
+  def writeTransactionInfo(txInfo: (Int, Transaction)): Array[Byte] = {
     val (h, tx) = txInfo
     val txBytes = tx.bytes()
     ByteBuffer.allocate(4 + txBytes.length).putInt(h).put(txBytes).array()
