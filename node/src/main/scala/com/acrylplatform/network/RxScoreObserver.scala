@@ -87,7 +87,7 @@ object RxScoreObserver extends ScorexLogging {
           .debounce(remoteScoreDebounce))
         .merge
         .map {
-          case ((ch, score)) =>
+          case (ch, score) =>
             scores.put(ch, score)
             log.trace(s"${id(ch)} New remote score $score")
             None

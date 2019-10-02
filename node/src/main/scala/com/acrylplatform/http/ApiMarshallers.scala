@@ -72,7 +72,7 @@ trait ApiMarshallers {
   }
 
   // preserve support for using plain strings as request entities
-  implicit val stringMarshaller = PredefinedToEntityMarshallers.stringMarshaller(`text/plain`)
+  implicit val stringMarshaller: ToEntityMarshaller[String] = PredefinedToEntityMarshallers.stringMarshaller(`text/plain`)
 }
 
 object ApiMarshallers extends ApiMarshallers

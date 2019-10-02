@@ -208,12 +208,12 @@ object RxExtensionLoader extends ScorexLogging {
 
     Observable
       .merge(
-        signatures.observeOn(scheduler).map { case ((ch, sigs)) => s = onNewSignatures(s, ch, sigs) },
-        blocks.observeOn(scheduler).map { case ((ch, block))    => s = onBlock(s, ch, block) },
+        signatures.observeOn(scheduler).map { case (ch, sigs) => s = onNewSignatures(s, ch, sigs) },
+        blocks.observeOn(scheduler).map { case (ch, block)    => s = onBlock(s, ch, block) },
         syncWithChannelClosed.observeOn(scheduler).map { ch =>
           s = onNewSyncWithChannelClosed(s, ch)
         },
-        appliedExtensions.map { case ((ch, extensionBlocks, ar)) => s = onExtensionApplied(s, extensionBlocks, ch, ar) }
+        appliedExtensions.map { case (ch, extensionBlocks, ar) => s = onExtensionApplied(s, extensionBlocks, ch, ar) }
       )
       .map { _ =>
         log.trace(s"Current state: $s")

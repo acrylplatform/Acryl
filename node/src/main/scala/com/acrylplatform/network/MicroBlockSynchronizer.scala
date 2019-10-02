@@ -72,7 +72,7 @@ object MicroBlockSynchronizer {
 
     microblockInvs
       .mapTask {
-        case ((ch, mbInv @ MicroBlockInv(_, totalSig, prevSig, _))) =>
+        case (ch, mbInv @ MicroBlockInv(_, totalSig, prevSig, _)) =>
           Task {
             mbInv.signaturesValid() match {
               case Left(err) =>
@@ -94,7 +94,7 @@ object MicroBlockSynchronizer {
       .subscribe()
 
     val observable = microblockResponses.observeOn(scheduler).flatMap {
-      case ((ch, MicroBlockResponse(mb))) =>
+      case (ch, MicroBlockResponse(mb)) =>
         import mb.{totalResBlockSig => totalSig}
         successfullyReceived.put(totalSig, dummy)
         BlockStats.received(mb, ch)

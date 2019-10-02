@@ -11,7 +11,7 @@ case class Message[Content <: AnyRef](spec: MessageSpec[Content], input: Either[
 
   import Message.{ChecksumLength, MAGIC}
 
-  lazy val dataBytes = input match {
+  lazy val dataBytes: Array[Byte] = input match {
     case Left(db) => db
     case Right(d) => spec.serializeData(d)
   }
@@ -23,7 +23,7 @@ case class Message[Content <: AnyRef](spec: MessageSpec[Content], input: Either[
 
   lazy val dataLength: Int = dataBytes.length
 
-  val bytes = Coeval.evalOnce {
+  val bytes: Coeval[Array[Byte]] = Coeval.evalOnce {
     val dataWithChecksum = if (dataLength > 0) {
       val checksum = crypto.fastHash(dataBytes).take(ChecksumLength)
       Bytes.concat(checksum, dataBytes)
@@ -38,7 +38,7 @@ object Message {
 
   val MAGIC = Array(0x12: Byte, 0x34: Byte, 0x56: Byte, 0x78: Byte)
 
-  val MagicLength = MAGIC.length
+  val MagicLength: Int = MAGIC.length
 
   val ChecksumLength    = 4
   val LengthFieldLength = 4

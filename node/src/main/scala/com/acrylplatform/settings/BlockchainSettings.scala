@@ -129,9 +129,9 @@ object GenesisSettings {
 case class BlockchainSettings(addressSchemeCharacter: Char, functionalitySettings: FunctionalitySettings, genesisSettings: GenesisSettings)
 
 object BlockchainType extends Enumeration {
-  val TESTNET = Value("TESTNET")
-  val MAINNET = Value("MAINNET")
-  val CUSTOM  = Value("CUSTOM")
+  val TESTNET: BlockchainType.Value = Value("TESTNET")
+  val MAINNET: BlockchainType.Value = Value("MAINNET")
+  val CUSTOM: BlockchainType.Value  = Value("CUSTOM")
 }
 
 object BlockchainSettings {

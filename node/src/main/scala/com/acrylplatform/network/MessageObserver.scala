@@ -5,12 +5,13 @@ import com.acrylplatform.transaction.Transaction
 import com.acrylplatform.utils.ScorexLogging
 import io.netty.channel.ChannelHandler.Sharable
 import io.netty.channel.{Channel, ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import monix.execution.schedulers.SchedulerService
 import monix.reactive.subjects.ConcurrentSubject
 
 @Sharable
 class MessageObserver extends ChannelInboundHandlerAdapter with ScorexLogging {
 
-  implicit val scheduler = monix.execution.Scheduler.fixedPool("message-observer", 2)
+  implicit val scheduler: SchedulerService = monix.execution.Scheduler.fixedPool("message-observer", 2)
 
   private val signatures          = ConcurrentSubject.publish[(Channel, Signatures)]
   private val blocks              = ConcurrentSubject.publish[(Channel, Block)]

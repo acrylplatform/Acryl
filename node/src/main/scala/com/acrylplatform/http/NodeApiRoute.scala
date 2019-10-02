@@ -20,7 +20,7 @@ case class NodeApiRoute(settings: RestAPISettings, blockchain: Blockchain, appli
     with WithSettings
     with ScorexLogging {
 
-  override lazy val route = pathPrefix("node") {
+  override lazy val route: Route = pathPrefix("node") {
     stop ~ status ~ version
   }
 
