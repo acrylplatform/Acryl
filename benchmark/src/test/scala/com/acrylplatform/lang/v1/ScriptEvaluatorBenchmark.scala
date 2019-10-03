@@ -22,8 +22,8 @@ import scorex.crypto.signatures.Curve25519
 import scala.util.Random
 
 object ScriptEvaluatorBenchmark {
-  val version = V1
-  val pureEvalContext = PureContext.build(Global, V1).evaluationContext
+  val version: V1.type                   = V1
+  val pureEvalContext: EvaluationContext = PureContext.build(Global, V1).evaluationContext
 }
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -102,7 +102,8 @@ class Base58Perf {
       .map { i =>
         val b = new Array[Byte](64)
         Random.nextBytes(b)
-        LET("v" + i, FUNCTION_CALL(PureContext.sizeBytes, List(FUNCTION_CALL(Native(FROMBASE58), List(CONST_STRING(Base58.encode(b)).explicitGet())))))
+        LET("v" + i,
+            FUNCTION_CALL(PureContext.sizeBytes, List(FUNCTION_CALL(Native(FROMBASE58), List(CONST_STRING(Base58.encode(b)).explicitGet())))))
       }
       .foldRight[EXPR](sum) { case (let, e) => BLOCK(let, e) }
   }
