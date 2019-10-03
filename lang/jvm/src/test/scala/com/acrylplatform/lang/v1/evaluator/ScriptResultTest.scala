@@ -14,21 +14,24 @@ import org.scalatestplus.scalacheck.{ScalaCheckPropertyChecks => PropertyChecks}
 
 class ScriptResultTest extends PropSpec with PropertyChecks with Matchers with NoShrink {
 
-  val el       = List.empty[(String, FINAL)]
-  val address1 = ByteStr.fromBytes(19: Byte)
-  val address2 = ByteStr.fromBytes(20: Byte)
-  val asset    = ByteStr.fromBytes(21: Byte)
-  val noAsset  = com.acrylplatform.lang.v1.evaluator.ctx.impl.unit
+  val el                = List.empty[(String, FINAL)]
+  val address1: ByteStr = ByteStr.fromBytes(19: Byte)
+  val address2: ByteStr = ByteStr.fromBytes(20: Byte)
+  val asset: ByteStr    = ByteStr.fromBytes(21: Byte)
+  val noAsset: CaseObj  = com.acrylplatform.lang.v1.evaluator.ctx.impl.unit
 
   val writeSetObj = CaseObj(
     CASETYPEREF("WriteSet", el),
-    Map("data" -> ARR(IndexedSeq(CaseObj(
-      CASETYPEREF("DataEntry", el),
-      Map(
-        "key"   -> CONST_STRING("xxx").explicitGet(),
-        "value" -> CONST_LONG(42)
-      )
-    ))))
+    Map(
+      "data" -> ARR(
+        IndexedSeq(
+          CaseObj(
+            CASETYPEREF("DataEntry", el),
+            Map(
+              "key"   -> CONST_STRING("xxx").explicitGet(),
+              "value" -> CONST_LONG(42)
+            )
+          ))))
   )
 
   val transferSetObj = CaseObj(
@@ -54,7 +57,8 @@ class ScriptResultTest extends PropSpec with PropertyChecks with Matchers with N
       )))
   )
 
-  val scriptResultObj = CaseObj(CASETYPEREF("ScriptResult", el), Map(FieldNames.ScriptWriteSet -> writeSetObj, FieldNames.ScriptTransferSet -> transferSetObj))
+  val scriptResultObj =
+    CaseObj(CASETYPEREF("ScriptResult", el), Map(FieldNames.ScriptWriteSet -> writeSetObj, FieldNames.ScriptTransferSet -> transferSetObj))
 
   val writeResult    = List(DataItem.Lng("xxx", 42))
   val transferResult = List((Address(address1), 41L, Some(asset)), (Address(address2), 42L, None))

@@ -10,6 +10,7 @@ import com.acrylplatform.lang.v1.compiler.Types._
 import com.acrylplatform.lang.v1.evaluator.EvaluatorV1
 import com.acrylplatform.lang.v1.evaluator.ctx._
 import com.acrylplatform.lang.v1.evaluator.ctx.impl.{EnvironmentFunctions, PureContext, _}
+import com.acrylplatform.lang.v1.traits.Environment.InputEntity
 import com.acrylplatform.lang.v1.traits.domain.{BlockInfo, Recipient, ScriptAssetInfo, Tx}
 import com.acrylplatform.lang.v1.traits.{DataType, Environment}
 import monix.eval.Coeval
@@ -57,17 +58,17 @@ object Common {
 
   val pointDInstance2 = CaseObj(pointTypeD, Map("YB" -> unit))
 
-  val sampleTypes = Seq(pointTypeA, pointTypeB, pointTypeC, pointTypeD) ++ Seq(UNION.create(AorB.typeList, Some("PointAB")),
-                                                                               UNION.create(BorC.typeList, Some("PointBC")),
-                                                                               UNION.create(CorD.typeList, Some("PointCD")))
+  val sampleTypes: Seq[FINAL] = Seq(pointTypeA, pointTypeB, pointTypeC, pointTypeD) ++ Seq(UNION.create(AorB.typeList, Some("PointAB")),
+                                                                                           UNION.create(BorC.typeList, Some("PointBC")),
+                                                                                           UNION.create(CorD.typeList, Some("PointCD")))
 
-  def sampleUnionContext(instance: CaseObj) =
+  def sampleUnionContext(instance: CaseObj): EvaluationContext =
     EvaluationContext.build(Map.empty, Map("p" -> LazyVal(EitherT.pure(instance))), Seq.empty)
 
-  def emptyBlockchainEnvironment(h: Int = 1, in: Coeval[Environment.InputEntity] = Coeval(???), nByte: Byte = 'T'): Environment = new Environment {
-    override def height: Long  = h
-    override def chainId: Byte = nByte
-    override def inputEntity   = in()
+  def emptyBlockchainEnvironment(h: Int = 1, in: Coeval[Environment.InputEntity] = Coeval(???), nByte: Byte = 'K'): Environment = new Environment {
+    override def height: Long             = h
+    override def chainId: Byte            = nByte
+    override def inputEntity: InputEntity = in()
 
     override def transactionById(id: Array[Byte]): Option[Tx]                                                    = ???
     override def transferTransactionById(id: Array[Byte]): Option[Tx]                                            = ???

@@ -43,29 +43,31 @@ object Global extends BaseGlobal {
     Merkle.verify(rootBytes, proofBytes, valueBytes)
 
   // Math functions
-  def roundMode(round: BaseGlobal.Rounds) : RoundingMode = {
+  def roundMode(round: BaseGlobal.Rounds): RoundingMode = {
     round match {
-      case BaseGlobal.RoundUp() => RoundingMode.UP
-      case BaseGlobal.RoundHalfUp() => RoundingMode.HALF_UP
+      case BaseGlobal.RoundUp()       => RoundingMode.UP
+      case BaseGlobal.RoundHalfUp()   => RoundingMode.HALF_UP
       case BaseGlobal.RoundHalfDown() => RoundingMode.HALF_DOWN
-      case BaseGlobal.RoundDown() => RoundingMode.DOWN
+      case BaseGlobal.RoundDown()     => RoundingMode.DOWN
       case BaseGlobal.RoundHalfEven() => RoundingMode.HALF_EVEN
-      case BaseGlobal.RoundCeiling() => RoundingMode.CEILING
-      case BaseGlobal.RoundFloor() => RoundingMode.FLOOR
+      case BaseGlobal.RoundCeiling()  => RoundingMode.CEILING
+      case BaseGlobal.RoundFloor()    => RoundingMode.FLOOR
     }
   }
 
-  def pow(b: Long, bp: Long, e: Long, ep: Long, rp: Long, round: BaseGlobal.Rounds) : Either[String, Long] = (Try {
-        val base = BD.valueOf(b, bp.toInt)
-        val exp = BD.valueOf(e, ep.toInt)
-        val res = BigDecimalMath.pow(base, exp, MathContext.DECIMAL128)
-        res.setScale(rp.toInt, roundMode(round)).unscaledValue.longValueExact
-      }).toEither.left.map(_.toString)
+  def pow(b: Long, bp: Long, e: Long, ep: Long, rp: Long, round: BaseGlobal.Rounds): Either[String, Long] =
+    Try {
+      val base = BD.valueOf(b, bp.toInt)
+      val exp  = BD.valueOf(e, ep.toInt)
+      val res  = BigDecimalMath.pow(base, exp, MathContext.DECIMAL128)
+      res.setScale(rp.toInt, roundMode(round)).unscaledValue.longValueExact
+    }.toEither.left.map(_.toString)
 
-  def log(b: Long, bp: Long, e: Long, ep: Long, rp: Long, round: BaseGlobal.Rounds) : Either[String, Long] = (Try {
-        val base = BD.valueOf(b, bp.toInt)
-        val exp = BD.valueOf(e, ep.toInt)
-        val res = BigDecimalMath.log(base, MathContext.DECIMAL128).divide(BigDecimalMath.log(exp, MathContext.DECIMAL128), MathContext.DECIMAL128)
-        res.setScale(rp.toInt, roundMode(round)).unscaledValue.longValueExact
-      }).toEither.left.map(_.toString)
+  def log(b: Long, bp: Long, e: Long, ep: Long, rp: Long, round: BaseGlobal.Rounds): Either[String, Long] =
+    Try {
+      val base = BD.valueOf(b, bp.toInt)
+      val exp  = BD.valueOf(e, ep.toInt)
+      val res  = BigDecimalMath.log(base, MathContext.DECIMAL128).divide(BigDecimalMath.log(exp, MathContext.DECIMAL128), MathContext.DECIMAL128)
+      res.setScale(rp.toInt, roundMode(round)).unscaledValue.longValueExact
+    }.toEither.left.map(_.toString)
 }
