@@ -16,18 +16,19 @@ object GeneratingBalanceProvider {
 
   def isMiningAllowed(blockchain: Blockchain, height: Int, effectiveBalance: Long): Boolean = {
     val activatedOf1000 = blockchain.activatedFeatures.get(BlockchainFeatures.SmallerMinimalGeneratingBalance.id).exists(height >= _)
-    val activatedOf100 = blockchain.activatedFeatures.get(BlockchainFeatures.MinimumGeneratingBalanceOf100.id).exists(height >= _)
+    val activatedOf100  = blockchain.activatedFeatures.get(BlockchainFeatures.MinimumGeneratingBalanceOf100.id).exists(height >= _)
     (!activatedOf100 && !activatedOf1000 && effectiveBalance >= MinimalEffectiveBalanceForGenerator1) ||
-      (!activatedOf100 && activatedOf1000 && effectiveBalance >= MinimalEffectiveBalanceForGenerator2) ||
-      (activatedOf100 && effectiveBalance >= MinimalEffectiveBalanceForGenerator3)
+    (!activatedOf100 && activatedOf1000 && effectiveBalance >= MinimalEffectiveBalanceForGenerator2) ||
+    (activatedOf100 && effectiveBalance >= MinimalEffectiveBalanceForGenerator3)
   }
 
   //noinspection ScalaStyle
   def isEffectiveBalanceValid(blockchain: Blockchain, height: Int, block: Block, effectiveBalance: Long): Boolean = {
     val activatedOf1000 = blockchain.activatedFeatures.get(BlockchainFeatures.SmallerMinimalGeneratingBalance.id).exists(height >= _)
-    val activatedOf100 = blockchain.activatedFeatures.get(BlockchainFeatures.MinimumGeneratingBalanceOf100.id).exists(height >= _)
+    val activatedOf100  = blockchain.activatedFeatures.get(BlockchainFeatures.MinimumGeneratingBalanceOf100.id).exists(height >= _)
     block.timestamp < blockchain.settings.functionalitySettings.minimalGeneratingBalanceAfter || (block.timestamp >= blockchain.settings.functionalitySettings.minimalGeneratingBalanceAfter && effectiveBalance >= MinimalEffectiveBalanceForGenerator1) ||
-      (activatedOf1000 && effectiveBalance >= MinimalEffectiveBalanceForGenerator2) || (activatedOf100 && effectiveBalance >= MinimalEffectiveBalanceForGenerator3)
+    (activatedOf1000 && effectiveBalance >= MinimalEffectiveBalanceForGenerator2) ||
+    (activatedOf100 && effectiveBalance >= MinimalEffectiveBalanceForGenerator3)
   }
 
   def balance(blockchain: Blockchain, account: Address, blockId: BlockId = ByteStr.empty): Long = {
