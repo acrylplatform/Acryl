@@ -198,8 +198,14 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
     miner.scheduleMining()
 
-    for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-      upnp.addPort(addr.getPort)
+    settings.networkSettings.declaredAddress match {
+      case Some(_) =>
+        for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
+          upnp.addPort(addr.getPort)
+        }
+      case None =>
+        if (settings.networkSettings.uPnPSettings.enable)
+          upnp.addPort(settings.networkSettings.bindAddress.getPort)
     }
 
     implicit val as: ActorSystem                 = actorSystem
@@ -313,7 +319,16 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       log.info("Closing REST API")
       if (settings.restAPISettings.enable)
         Try(Await.ready(serverBinding.unbind(), 2.minutes)).failed.map(e => log.error("Failed to unbind REST API port", e))
-      for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) upnp.deletePort(addr.getPort)
+
+      settings.networkSettings.declaredAddress match {
+        case Some(_) =>
+          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
+            upnp.deletePort(addr.getPort)
+          }
+        case None =>
+          if (settings.networkSettings.uPnPSettings.enable)
+            upnp.deletePort(settings.networkSettings.bindAddress.getPort)
+      }
 
       log.debug("Closing peer database")
       peerDatabase.close()
