@@ -43,7 +43,10 @@ object PeersSpec extends MessageSpec[KnownPeers] {
     val lengthBytes = util.Arrays.copyOfRange(bytes, 0, DataLength)
     val length      = Ints.fromByteArray(lengthBytes)
 
-    assert(bytes.length == DataLength + (length * (AddressLengthIPv4 + PortLength)) || bytes.length == DataLength + (length * (AddressLengthIPv6 + PortLength)), "Data does not match length")
+    assert(
+      bytes.length == DataLength + (length * (AddressLengthIPv4 + PortLength)) || bytes.length == DataLength + (length * (AddressLengthIPv6 + PortLength)),
+      "Data does not match length"
+    )
 
     val AddressLength = ((bytes.length - DataLength) / length) - PortLength
 
@@ -67,7 +70,7 @@ object PeersSpec extends MessageSpec[KnownPeers] {
 
     xs.foldLeft(lengthBytes) {
       case (bs, (peerAddress, peerPort)) =>
-        Bytes.concat(bs, peerAddress, Ints.toByteArray(peerPort))
+        Bytes.concat(bs, peerAddress, Ints.toByteArray(peerPort)) // TODO: Add support IPv6
     }
   }
 }
