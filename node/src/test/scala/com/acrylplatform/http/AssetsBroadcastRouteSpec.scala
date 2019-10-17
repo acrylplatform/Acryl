@@ -29,7 +29,6 @@ class AssetsBroadcastRouteSpec
   private val utx         = stub[UtxPool]
   private val allChannels = stub[ChannelGroup]
 
-
   (utx.putIfNew _)
     .when(*, *)
     .onCall((t: Transaction, _: Boolean) => TracedResult(Left(TransactionValidationError(GenericError("foo"), t))))
@@ -100,7 +99,9 @@ class AssetsBroadcastRouteSpec
       forAll(broadcastReissueReq) { rr =>
         def posting[A: Writes](v: A): RouteTestResult = Post(routePath("reissue"), v) ~> route
 
-        // todo: invalid sender
+        forAll(invalidBase58) { pk =>
+          posting(rr.copy(senderPublicKey = pk)) should produce(InvalidAddress)
+        }
         forAll(nonPositiveLong) { q =>
           posting(rr.copy(quantity = q)) should produce(NonPositiveAmount(s"$q of assets"))
         }
