@@ -20,10 +20,9 @@ import play.api.libs.json._
 case class BlocksApiRoute(settings: RestAPISettings, blockchain: Blockchain, allChannels: ChannelGroup)(implicit sc: Scheduler)
     extends ApiRoute
     with WithSettings {
-  private[this] val MaxBlocksPerRequest = 100 // todo: make this configurable and fix integration tests
-  private[this] val commonApi           = new CommonBlocksApi(blockchain)
+  private[this] val commonApi = new CommonBlocksApi(blockchain)
 
-  override lazy val route =
+  override lazy val route: Route =
     pathPrefix("blocks") {
       signature ~ first ~ last ~ lastHeaderOnly ~ at ~ atHeaderOnly ~ seq ~ seqHeaderOnly ~ height ~ heightEncoded ~ child ~ address ~ delay
     }
@@ -38,7 +37,7 @@ case class BlocksApiRoute(settings: RestAPISettings, blockchain: Blockchain, all
     ))
   def address: Route = (path("address" / Segment / IntNumber / IntNumber) & get) {
     case (address, start, end) =>
-      if (end >= 0 && start >= 0 && end - start >= 0 && end - start < MaxBlocksPerRequest) {
+      if (end >= 0 && start >= 0 && end - start >= 0 && end - start < settings.maxBlocksPerRequest) {
         val result = for {
           address <- Address.fromString(address)
           jsonBlocks = commonApi.blockHeadersRange(start, end).filter(_._1.signerData.generator.toAddress == address).map {
@@ -174,7 +173,7 @@ case class BlocksApiRoute(settings: RestAPISettings, blockchain: Blockchain, all
   }
 
   private def seq(start: Int, end: Int, includeTransactions: Boolean): StandardRoute = {
-    if (end >= 0 && start >= 0 && end - start >= 0 && end - start < MaxBlocksPerRequest) {
+    if (end >= 0 && start >= 0 && end - start >= 0 && end - start < settings.maxBlocksPerRequest) {
       val blocks = if (includeTransactions) {
         commonApi
           .blocksRange(start, end)
