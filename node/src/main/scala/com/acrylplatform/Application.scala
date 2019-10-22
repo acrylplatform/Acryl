@@ -1,6 +1,7 @@
 package com.acrylplatform
 
 import java.io.File
+import java.net.InetSocketAddress
 import java.security.Security
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,7 +24,7 @@ import com.acrylplatform.db.openDB
 import com.acrylplatform.extensions.{Context, Extension}
 import com.acrylplatform.features.api.ActivationApiRoute
 import com.acrylplatform.history.StorageFactory
-import com.acrylplatform.http.{DebugApiRoute, NodeApiRoute, AcrylApiRoute}
+import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute}
 import com.acrylplatform.metrics.Metrics
 import com.acrylplatform.mining.{Miner, MinerImpl}
 import com.acrylplatform.network.RxExtensionLoader.RxExtensionLoaderShutdownHook
@@ -142,9 +143,36 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         allChannels.broadcast(LocalScoreChanged(x))
       }(scheduler)
 
+    val networkSettingsCopy = settings.networkSettings.copy(
+      declaredAddress = settings.networkSettings.declaredAddress match {
+        case Some(value) =>
+          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
+            upnp.addPort(addr.getPort)
+          }
+          Option(value)
+        case None =>
+          if (settings.networkSettings.uPnPSettings.enable) {
+            upnp.addPort(settings.networkSettings.bindAddress.getPort)
+            Option(new InetSocketAddress(upnp.externalAddress.get.getHostAddress, settings.networkSettings.bindAddress.getPort))
+          } else
+            None
+      }
+    )
+
+    val settingsForNetworkServer = settings.copy(
+      networkSettings = networkSettingsCopy
+    )
+
     val historyReplier = new HistoryReplier(blockchainUpdater, settings.synchronizationSettings, historyRepliesScheduler)
     val network =
-      NetworkServer(settings, lastBlockInfo, blockchainUpdater, historyReplier, utxStorage, peerDatabase, allChannels, establishedConnections)
+      NetworkServer(settingsForNetworkServer,
+                    lastBlockInfo,
+                    blockchainUpdater,
+                    historyReplier,
+                    utxStorage,
+                    peerDatabase,
+                    allChannels,
+                    establishedConnections)
     maybeNetwork = Some(network)
     val (signatures, blocks, blockchainScores, microblockInvs, microblockResponses, transactions) = network.messages
 
@@ -197,16 +225,6 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
     Observable.merge(microBlockSink, blockSink).subscribe()
 
     miner.scheduleMining()
-
-    settings.networkSettings.declaredAddress match {
-      case Some(_) =>
-        for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-          upnp.addPort(addr.getPort)
-        }
-      case None =>
-        if (settings.networkSettings.uPnPSettings.enable)
-          upnp.addPort(settings.networkSettings.bindAddress.getPort)
-    }
 
     implicit val as: ActorSystem                 = actorSystem
     implicit val materializer: ActorMaterializer = ActorMaterializer()
