@@ -47,10 +47,19 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
 
   def addPort(port: Int): Try[Unit] =
     Try {
-      if (gateway.get.addPortMapping(port, port, localAddress.get.getHostAddress, "TCP", "Scorex")) {
-        log.debug("Mapped port [" + externalAddress.get.getHostAddress + "]:" + port)
-      } else {
-        log.debug("Unable to map port " + port)
+      val externalAddr: String = externalAddress match {
+        case Some(address) => address.getHostAddress
+        case None          => "No address"
+      }
+
+      localAddress match {
+        case Some(address) =>
+          if (gateway.get.addPortMapping(port, port, address.getHostAddress, "TCP", "Scorex")) {
+            log.debug("Mapped port [" + externalAddr + "]:" + port)
+          } else {
+            log.debug("Unable to map port " + port)
+          }
+        case None => log.error("No local address")
       }
     }.recover {
       case t: Throwable =>

@@ -143,21 +143,24 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         allChannels.broadcast(LocalScoreChanged(x))
       }(scheduler)
 
-    val networkSettingsCopy = settings.networkSettings.copy(
-      declaredAddress = settings.networkSettings.declaredAddress match {
-        case Some(value) =>
-          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-            upnp.addPort(addr.getPort)
+    val networkSettingsCopy =
+      if (settings.networkSettings.uPnPSettings.enable)
+        settings.networkSettings.copy(
+          declaredAddress = settings.networkSettings.declaredAddress match {
+            case Some(address) =>
+              for (addr <- settings.networkSettings.declaredAddress)
+                upnp.addPort(addr.getPort)
+              Option(address)
+            case None =>
+              upnp.addPort(settings.networkSettings.bindAddress.getPort)
+              upnp.externalAddress match {
+                case Some(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
+                case None          => None
+              }
           }
-          Option(value)
-        case None =>
-          if (settings.networkSettings.uPnPSettings.enable) {
-            upnp.addPort(settings.networkSettings.bindAddress.getPort)
-            Option(new InetSocketAddress(upnp.externalAddress.get.getHostAddress, settings.networkSettings.bindAddress.getPort))
-          } else
-            None
-      }
-    )
+        )
+      else
+        settings.networkSettings.copy()
 
     val settingsForNetworkServer = settings.copy(
       networkSettings = networkSettingsCopy
