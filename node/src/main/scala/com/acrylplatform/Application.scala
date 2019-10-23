@@ -149,13 +149,17 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
           declaredAddress = settings.networkSettings.declaredAddress match {
             case Some(address) =>
               for (addr <- settings.networkSettings.declaredAddress)
-                upnp.addPort(addr.getPort)
+                upnp.addPort(addr.getPort) match {
+                  case Left(address) => log.debug("Mapped port [" + address + "]:" + addr.getPort)
+                  case Right(string) => log.error(string)
+                }
               Option(address)
             case None =>
-              upnp.addPort(settings.networkSettings.bindAddress.getPort)
-              upnp.externalAddress match {
-                case Some(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
-                case None          => None
+              upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
+                case Left(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
+                case Right(string) =>
+                  log.error(string)
+                  None
               }
           }
         )
