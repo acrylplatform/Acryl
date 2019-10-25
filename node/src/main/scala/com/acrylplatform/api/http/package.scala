@@ -1,7 +1,8 @@
 package com.acrylplatform.api
 
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.server.{PathMatcher, PathMatcher1}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
 import com.acrylplatform.account.{Address, PublicKey}
 import com.acrylplatform.api.http.ApiError.WrongJson
 import com.acrylplatform.api.http.DataRequest._
@@ -19,6 +20,7 @@ import com.acrylplatform.transaction.assets.exchange.{ExchangeTransactionV1, Exc
 import com.acrylplatform.transaction.lease._
 import com.acrylplatform.transaction.smart.{InvokeScriptTransaction, SetScriptTransaction}
 import com.acrylplatform.transaction.transfer._
+import monix.execution.Scheduler
 import play.api.libs.json._
 
 import scala.util.{Success, Try}
@@ -96,4 +98,6 @@ package object http extends ApiMarshallers {
     .flatMap(str => Base58.tryDecodeWithLimit(str).toOption.map(ByteStr(_)))
 
   val AddrSegment: PathMatcher1[Address] = B58Segment.flatMap(Address.fromBytes(_).toOption)
+
+  def extractScheduler: Directive1[Scheduler] = extractExecutionContext.map(ec => Scheduler(ec))
 }

@@ -9,6 +9,7 @@ import com.acrylplatform.db.DBCacheSettings
 import com.acrylplatform.lagonaki.mocks.TestBlock
 import com.acrylplatform.settings.{TestFunctionalitySettings, AcrylSettings, loadConfig}
 import com.acrylplatform.state.diffs.ENOUGH_AMT
+import com.acrylplatform.state.utils._
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.transfer.{TransferTransaction, TransferTransactionV1}
 import com.acrylplatform.transaction.{GenesisTransaction, Transaction}

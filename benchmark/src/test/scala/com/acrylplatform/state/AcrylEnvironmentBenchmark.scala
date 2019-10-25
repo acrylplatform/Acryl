@@ -125,7 +125,7 @@ object AcrylEnvironmentBenchmark {
     }
 
     val environment: Environment = {
-      val portfolioChanges = Observer.empty(UncaughtExceptionReporter.LogExceptionsToStandardErr)
+      val portfolioChanges = Observer.empty(UncaughtExceptionReporter.default)
       val state            = new LevelDBWriter(db, portfolioChanges, acrylSettings.blockchainSettings.functionalitySettings, acrylSettings.dbSettings)
       new AcrylEnvironment(
         AddressScheme.current.chainId,

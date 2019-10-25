@@ -15,10 +15,7 @@ object CancelLeaseOverflow extends ScorexLogging {
     addressSet.foreach(addr => log.info(s"Resetting lease overflow for $addr"))
 
     val leasesToCancel = concurrent.blocking {
-      blockchain
-        .allActiveLeases
-        .collect { case tx if addressSet.contains(tx.sender.toAddress) => tx.id() }
-        .toVector
+      blockchain.collectActiveLeases { case tx if addressSet.contains(tx.sender.toAddress) => tx.id() }.toVector
     }
 
     leasesToCancel.foreach(id => log.info(s"Cancelling lease $id"))

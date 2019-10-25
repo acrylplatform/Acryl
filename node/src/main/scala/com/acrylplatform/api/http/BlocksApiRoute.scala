@@ -45,7 +45,7 @@ case class BlocksApiRoute(settings: RestAPISettings, blockchain: Blockchain, all
               blockchain.blockAt(h).get.json().addBlockFields(h)
           }
           result = jsonBlocks.toListL.map(JsArray(_))
-        } yield result.runAsync
+        } yield result.runToFuture
 
         complete(result)
       } else {
@@ -184,7 +184,7 @@ case class BlocksApiRoute(settings: RestAPISettings, blockchain: Blockchain, all
           .map { case (bh, size, height) => BlockHeader.json(bh, size).addBlockFields(height) }
       }
 
-      complete(blocks.toListL.map(JsArray(_)).runAsync)
+      complete(blocks.toListL.map(JsArray(_)).runToFuture)
     } else {
       complete(TooBigArrayAllocation)
     }

@@ -19,10 +19,11 @@ import com.acrylplatform.crypto
 import com.acrylplatform.lang.ValidationError
 import com.acrylplatform.mining.{Miner, MinerDebugInfo}
 import com.acrylplatform.network.{LocalScoreChanged, PeerDatabase, PeerInfo, _}
-import com.acrylplatform.settings.AcrylSettings
+import com.acrylplatform.settings.{AcrylSettings, RestAPISettings}
 import com.acrylplatform.state.diffs.TransactionDiffer
+import com.acrylplatform.state.extensions.Distributions
 import com.acrylplatform.state.{Blockchain, LeaseBalance, NG, TransactionId}
-import com.acrylplatform.transaction.TxValidationError.{GenericError, InvalidRequestSignature}
+import com.acrylplatform.transaction.TxValidationError.InvalidRequestSignature
 import com.acrylplatform.transaction._
 import com.acrylplatform.transaction.smart.script.trace.TracedResult
 import com.acrylplatform.transaction.smart.{InvokeScriptTransaction, Verifier}
@@ -66,11 +67,12 @@ case class DebugApiRoute(ws: AcrylSettings,
 
   import DebugApiRoute._
 
+  private[this] val dst                  = Distributions(ng)
   private lazy val configStr             = configRoot.render(ConfigRenderOptions.concise().setJson(true).setFormatted(true))
   private lazy val fullConfig: JsValue   = Json.parse(configStr)
   private lazy val acrylConfig: JsObject = Json.obj("acryl" -> (fullConfig \ "acryl").get)
 
-  override val settings = ws.restAPISettings
+  override val settings: RestAPISettings = ws.restAPISettings
   override lazy val route: Route = pathPrefix("debug") {
     blocks ~ state ~ info ~ stateAcryl ~ rollback ~ rollbackTo ~ blacklist ~ portfolios ~ minerInfo ~ historyInfo ~ configInfo ~ print ~ validate ~ stateChanges
   }
@@ -144,7 +146,7 @@ case class DebugApiRoute(ws: AcrylSettings,
       Address.fromString(rawAddress) match {
         case Left(_) => complete(InvalidAddress)
         case Right(address) =>
-          val base      = ng.portfolio(address)
+          val base      = dst.portfolio(address)
           val portfolio = if (considerUnspent.getOrElse(true)) Monoid.combine(base, utxStorage.pessimisticPortfolio(address)) else base
           complete(Json.toJson(portfolio))
       }
@@ -155,7 +157,7 @@ case class DebugApiRoute(ws: AcrylSettings,
   @ApiOperation(value = "State", notes = "Get current state", httpMethod = "GET")
   @ApiResponses(Array(new ApiResponse(code = 200, message = "Json state")))
   def state: Route = (path("state") & get & withAuth) {
-    complete(ng.acrylDistribution(ng.height).map(_.map { case (a, b) => a.stringRepr -> b }))
+    complete(dst.acrylDistribution(ng.height).map(_.map { case (a, b) => a.stringRepr -> b }))
   }
 
   @Path("/stateAcryl/{height}")
@@ -165,10 +167,11 @@ case class DebugApiRoute(ws: AcrylSettings,
       new ApiImplicitParam(name = "height", value = "height", required = true, dataType = "integer", paramType = "path")
     ))
   def stateAcryl: Route = (path("stateAcryl" / IntNumber) & get & withAuth) { height =>
-    complete(ng.acrylDistribution(height).map(_.map { case (a, b) => a.stringRepr -> b }))
+    complete(dst.acrylDistribution(height).map(_.map { case (a, b) => a.stringRepr -> b }))
   }
 
-  private def rollbackToBlock(blockId: ByteStr, returnTransactionsToUtx: Boolean)(implicit ec: ExecutionContext): Future[Either[ValidationError, JsObject]] = {
+  private def rollbackToBlock(blockId: ByteStr, returnTransactionsToUtx: Boolean)(
+      implicit ec: ExecutionContext): Future[Either[ValidationError, JsObject]] = {
     rollbackTask(blockId).asyncBoundary
       .map(_.map { blocks =>
         allChannels.broadcast(LocalScoreChanged(ng.score))
@@ -196,7 +199,7 @@ case class DebugApiRoute(ws: AcrylSettings,
     Array(
       new ApiResponse(code = 200, message = "200 if success, 404 if there are no block at this height")
     ))
-  def rollback: Route = (path("rollback") & post & withAuth & withRequestTimeout(15.minutes) & extractExecutionContext) { implicit ec =>
+  def rollback: Route = (path("rollback") & post & withAuth & withRequestTimeout(15.minutes) & extractScheduler) { implicit sc =>
     json[RollbackParams] { params =>
       ng.blockAt(params.rollbackTo) match {
         case Some(block) =>
@@ -291,7 +294,7 @@ case class DebugApiRoute(ws: AcrylSettings,
       new ApiImplicitParam(name = "signature", value = "Base58-encoded block signature", required = true, dataType = "string", paramType = "path")
     ))
   def rollbackTo: Route = path("rollback-to" / Segment) { signature =>
-    (delete & withAuth & extractExecutionContext) { implicit ec =>
+    (delete & withAuth & extractScheduler) { implicit sc =>
       val signatureEi: Either[ValidationError, ByteStr] =
         ByteStr
           .decodeBase58(signature)
@@ -343,7 +346,6 @@ case class DebugApiRoute(ws: AcrylSettings,
   def validate: Route = (path("validate") & post) {
     handleExceptions(jsonExceptionHandler) {
       json[JsObject] { jsv =>
-
         val h  = blockchain.height
         val t0 = System.nanoTime
         val tracedDiff = for {
@@ -391,9 +393,11 @@ case class DebugApiRoute(ws: AcrylSettings,
   }
 
   @Path("/stateChanges/address/{address}/limit/{limit}")
-  @ApiOperation(value = "List of transactions by address with state changes",
-                notes = "Get list of transactions with state changes where specified address has been involved",
-                httpMethod = "GET")
+  @ApiOperation(
+    value = "List of transactions by address with state changes",
+    notes = "Get list of transactions with state changes where specified address has been involved",
+    httpMethod = "GET"
+  )
   @ApiImplicitParams(
     Array(
       new ApiImplicitParam(name = "address", value = "Address", required = true, dataType = "string", paramType = "path"),
@@ -407,18 +411,11 @@ case class DebugApiRoute(ws: AcrylSettings,
   def stateChangesByAddress: Route =
     (get & path("stateChanges" / "address" / AddrSegment / "limit" / IntNumber) & parameter('after.?) & handleExceptions(jsonExceptionHandler)) {
       (address, limit, afterOpt) =>
-        validate(limit <= settings.transactionsByAddressLimit, s"Max limit is ${settings.transactionsByAddressLimit}") {
-          import cats.implicits._
-          val resultE: Either[ValidationError, Seq[JsObject]] = for {
-            txs <- concurrent
-              .blocking(
-                blockchain.addressTransactions(address,
-                                               Set.empty[Byte],
-                                               limit,
-                                               afterOpt.flatMap(str => Base58.tryDecodeWithLimit(str).map(ByteStr(_)).toOption)))
-              .left
-              .map(GenericError(_))
-            jsons <- txs
+        (validate(limit <= settings.transactionsByAddressLimit, s"Max limit is ${settings.transactionsByAddressLimit}") & extractScheduler) {
+          implicit sc =>
+            import cats.implicits._
+            val result = blockchain
+              .addressTransactionsObservable(address, Set.empty, afterOpt.flatMap(str => Base58.tryDecodeWithLimit(str).map(ByteStr(_)).toOption))
               .map {
                 case (height, tx: InvokeScriptTransaction) =>
                   blockchain
@@ -428,11 +425,11 @@ case class DebugApiRoute(ws: AcrylSettings,
                 case (height, tx) =>
                   Right(tx.json() ++ Json.obj("height" -> JsNumber(height)))
               }
-              .toList
-              .sequence
-          } yield jsons
+              .take(limit)
+              .toListL
+              .map(_.sequence)
 
-          complete(resultE)
+            complete(result.runAsyncLogErr)
         }
     }
 }

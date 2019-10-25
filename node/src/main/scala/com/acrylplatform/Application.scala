@@ -224,12 +224,12 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
                               blockchainUpdater.lastBlockInfo)
 
     val microBlockSink = microblockData
-      .mapTask(scala.Function.tupled(processMicroBlock))
+      .mapEval(scala.Function.tupled(processMicroBlock))
 
     val blockSink = newBlocks
-      .mapTask(scala.Function.tupled(processBlock))
+      .mapEval(scala.Function.tupled(processBlock))
 
-    Observable.merge(microBlockSink, blockSink).subscribe()
+    Observable(microBlockSink, blockSink).merge.subscribe()
 
     miner.scheduleMining()
 

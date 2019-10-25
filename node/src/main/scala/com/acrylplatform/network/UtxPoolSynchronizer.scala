@@ -8,7 +8,7 @@ import com.acrylplatform.utils.ScorexLogging
 import com.acrylplatform.utx.UtxPool
 import io.netty.channel.Channel
 import io.netty.channel.group.ChannelGroup
-import monix.eval.Task
+import monix.eval.{Coeval, Task}
 import monix.execution.{CancelableFuture, Scheduler}
 import monix.reactive.{Observable, OverflowStrategy}
 
@@ -48,10 +48,10 @@ object UtxPoolSynchronizer extends ScorexLogging {
     val synchronizerFuture = newTxSource
       .whileBusyBuffer(OverflowStrategy.DropOldAndSignal(settings.maxQueueSize, { dropped =>
         log.warn(s"UTX queue overflow: $dropped transactions dropped")
-        None
+        Coeval(Option(None))
       }))
       .mapParallelUnordered(settings.parallelism) {
-        case (sender, transaction) =>
+        case (sender, transaction: Transaction) =>
           Task {
             concurrent.blocking(utx.putIfNew(transaction).resultE) match {
               case Right(true) =>

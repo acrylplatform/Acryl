@@ -1,6 +1,6 @@
 package com.acrylplatform.utx
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
@@ -24,6 +24,7 @@ import com.acrylplatform.mining._
 import com.acrylplatform.settings._
 import com.acrylplatform.state._
 import com.acrylplatform.state.diffs._
+import com.acrylplatform.state.extensions.Distributions
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.TxValidationError.SenderIsBlacklisted
 import com.acrylplatform.transaction.smart.SetScriptTransaction
@@ -33,6 +34,7 @@ import com.acrylplatform.transaction.{Asset, Transaction, _}
 import com.acrylplatform.utils.Implicits.SubjectOps
 import com.acrylplatform.utils.Time
 import monix.reactive.subjects.Subject
+import org.iq80.leveldb.DB
 import org.scalacheck.Gen
 import org.scalacheck.Gen._
 import org.scalamock.scalatest.MockFactory
@@ -45,9 +47,9 @@ private object UtxPoolSpecification {
   private val ignoreSpendableBalanceChanged = Subject.empty[(Address, Asset)]
 
   final case class TempDB(fs: FunctionalitySettings, dbSettings: DBSettings) {
-    val path   = Files.createTempDirectory("leveldb-test")
-    val db     = openDB(path.toAbsolutePath.toString)
-    val writer = new LevelDBWriter(db, ignoreSpendableBalanceChanged, fs, dbSettings)
+    val path: Path = Files.createTempDirectory("leveldb-test")
+    val db: DB     = openDB(path.toAbsolutePath.toString)
+    val writer     = new LevelDBWriter(db, ignoreSpendableBalanceChanged, fs, dbSettings)
 
     sys.addShutdownHook {
       db.close()
@@ -65,7 +67,7 @@ class UtxPoolSpecification
     with NoShrink
     with BlocksTransactionsHelpers
     with WithDomain {
-  val PoolDefaultMaxBytes = 50 * 1024 * 1024 // 50 MB
+  val PoolDefaultMaxBytes: Int = 50 * 1024 * 1024 // 50 MB
 
   import FeeValidation.{ScriptExtraFee => extraFee}
   import FunctionalitySettings.TESTNET.{maxTransactionTimeBackOffset => maxAge}
@@ -286,8 +288,7 @@ class UtxPoolSpecification
 
   private def preconditionsGen(lastBlockId: ByteStr, master: KeyPair): Gen[Seq[Block]] =
     for {
-      version <- Gen.oneOf(SetScriptTransaction.supportedVersions.toSeq)
-      ts      <- timestampGen
+      ts <- timestampGen
     } yield {
       val setScript = SetScriptTransaction.selfSigned(master, Some(script), 100000, ts + 1).explicitGet()
       Seq(TestBlock.create(ts + 1, lastBlockId, Seq(setScript)))
@@ -502,7 +503,7 @@ class UtxPoolSpecification
 
       "takes into account unconfirmed transactions" in forAll(withValidPayments) {
         case (sender, state, utxPool, _, _) =>
-          val basePortfolio = state.portfolio(sender)
+          val basePortfolio = Distributions(state).portfolio(sender)
           val baseAssetIds  = basePortfolio.assetIds
 
           val pessimisticAssetIds = {

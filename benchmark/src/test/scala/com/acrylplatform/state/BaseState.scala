@@ -32,7 +32,7 @@ trait BaseState {
     LevelDBFactory.factory.open(new File(dir), options)
   }
 
-  private val portfolioChanges = Observer.empty(UncaughtExceptionReporter.LogExceptionsToStandardErr)
+  private val portfolioChanges = Observer.empty(UncaughtExceptionReporter.default)
   val state: LevelDBWriter = new LevelDBWriter(
     db,
     portfolioChanges,

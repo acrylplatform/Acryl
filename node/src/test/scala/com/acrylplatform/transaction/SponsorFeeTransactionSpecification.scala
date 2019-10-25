@@ -6,9 +6,9 @@ import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.EitherExt2
 import com.acrylplatform.features.BlockchainFeatures._
 import com.acrylplatform.lagonaki.mocks.TestBlock.{create => block}
-import com.acrylplatform.settings.{Constants, TestFunctionalitySettings}
+import com.acrylplatform.settings.{Constants, FunctionalitySettings, TestFunctionalitySettings}
 import com.acrylplatform.state.diffs._
-import com.acrylplatform.transaction.Asset.{IssuedAsset, Acryl}
+import com.acrylplatform.transaction.Asset.{Acryl, IssuedAsset}
 import com.acrylplatform.transaction.assets.{IssueTransactionV1, SponsorFeeTransaction}
 import com.acrylplatform.transaction.transfer.TransferTransactionV1
 import org.scalacheck.Gen
@@ -18,10 +18,12 @@ import play.api.libs.json.Json
 
 class SponsorFeeTransactionSpecification extends PropSpec with PropertyChecks with Matchers with TransactionGen {
   val One = 100000000L
-  val NgAndSponsorshipSettings = TestFunctionalitySettings.Enabled.copy(preActivatedFeatures =
-                                                                          Map(NG.id -> 0, FeeSponsorship.id -> 0, SmartAccounts.id -> 0),
-                                                                        blocksForFeatureActivation = 1,
-                                                                        featureCheckBlocksPeriod = 1)
+  val NgAndSponsorshipSettings: FunctionalitySettings =
+    TestFunctionalitySettings.Enabled.copy(
+      preActivatedFeatures = Map(NG.id -> 0, FeeSponsorship.id -> 0, SmartAccounts.id -> 0),
+      blocksForFeatureActivation = 1,
+      featureCheckBlocksPeriod = 1
+    )
 
   property("SponsorFee serialization roundtrip") {
     forAll(sponsorFeeGen) { transaction: SponsorFeeTransaction =>
@@ -129,7 +131,7 @@ class SponsorFeeTransactionSpecification extends PropSpec with PropertyChecks wi
           .right
           .get
         minFee <- smallFeeGen
-        assetId = issue.assetId()
+        assetId = issue.assetId
       } yield SponsorFeeTransaction.selfSigned(sender, IssuedAsset(assetId), Some(minFee), fee, timestamp) should produce("insufficient fee")
     }
   }
@@ -144,7 +146,7 @@ class SponsorFeeTransactionSpecification extends PropSpec with PropertyChecks wi
           .right
           .get
         minFee  = None
-        assetId = issue.assetId()
+        assetId = issue.assetId
       } yield SponsorFeeTransaction.selfSigned(sender, IssuedAsset(assetId), minFee, fee, timestamp) should produce("insufficient fee")
     }
   }

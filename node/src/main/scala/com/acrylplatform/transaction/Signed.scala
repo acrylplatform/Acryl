@@ -22,7 +22,7 @@ trait Signed extends Authorized {
 
   @ApiModelProperty(hidden = true)
   val signaturesValid: Coeval[Either[InvalidSignature, this.type]] =
-    Coeval.evalOnce(Await.result(signaturesValidMemoized.runAsync(Signed.scheduler), Duration.Inf))
+    Coeval.evalOnce(Await.result(signaturesValidMemoized.runToFuture(Signed.scheduler), Duration.Inf))
 }
 
 object Signed {
@@ -34,16 +34,18 @@ object Signed {
   }
 
   def validateOrdered[S <: Signed](ss: Seq[S]): E[Seq[S]] =
-    Await.result(Task
-                   .wander(ss)(s => s.signaturesValidMemoized)
-                   .map { l =>
-                     l.find(_.isLeft) match {
-                       case Some(e) => Left(e.left.get)
-                       case None    => Right(ss)
-                     }
-                   }
-                   .runAsync,
-                 Duration.Inf)
+    Await.result(
+      Task
+        .wander(ss)(s => s.signaturesValidMemoized)
+        .map { l =>
+          l.find(_.isLeft) match {
+            case Some(e) => Left(e.left.get)
+            case None    => Right(ss)
+          }
+        }
+        .runToFuture,
+      Duration.Inf
+    )
 
   private def validateTask[S <: Signed](signedEntity: S): Task[E[S]] =
     Task {

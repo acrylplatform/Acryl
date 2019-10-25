@@ -68,10 +68,10 @@ object MicroBlockSynchronizer {
 
     def tryDownloadNext(prevBlockId: ByteStr): Unit = Option(nextInvs.getIfPresent(prevBlockId)).foreach(requestMicroBlock)
 
-    lastBlockIdEvents.mapTask(f => Task(tryDownloadNext(f))).executeOn(scheduler).logErr.subscribe()
+    lastBlockIdEvents.mapEval(f => Task(tryDownloadNext(f))).executeOn(scheduler).logErr.subscribe()
 
     microblockInvs
-      .mapTask {
+      .mapEval {
         case (ch, mbInv @ MicroBlockInv(_, totalSig, prevSig, _)) =>
           Task {
             mbInv.signaturesValid() match {
