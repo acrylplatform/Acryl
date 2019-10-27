@@ -42,10 +42,9 @@ object Importer extends ScorexLogging {
             val extAppender       = BlockAppender(blockchainUpdater, time, ups, pos, scheduler, verifyTransactions) _
             checkGenesis(settings, blockchainUpdater)
             val bis           = new BufferedInputStream(inputStream)
-            var quit          = false
             val lenBytes      = new Array[Byte](Ints.BYTES)
             val start         = System.nanoTime()
-            var counter       = 0
+            val counter       = 0
             val startHeight   = blockchainUpdater.height
             var blocksToSkip  = startHeight - 1
             val blocksToApply = importHeight - startHeight + 1
@@ -58,37 +57,43 @@ object Importer extends ScorexLogging {
               log.info(s"Imported $counter block(s) from $startHeight to ${startHeight + counter} in ${humanReadableDuration(millis)}")
             }
 
-            while (!quit && counter < blocksToApply) {
-              val s1 = bis.read(lenBytes)
-              if (s1 == Ints.BYTES) {
-                val len    = Ints.fromByteArray(lenBytes)
-                val buffer = new Array[Byte](len)
-                val s2     = bis.read(buffer)
-                if (s2 == len) {
-                  if (blocksToSkip > 0) {
-                    blocksToSkip -= 1
-                  } else {
-                    val Right(block) =
-                      if (format == Formats.Binary) Block.parseBytes(buffer).toEither
-                      else PBBlocks.vanilla(PBBlocks.addChainId(protobuf.block.PBBlock.parseFrom(buffer)), unsafe = true)
+            cycle(quit = false, 0)
 
-                    if (blockchainUpdater.lastBlockId.contains(block.reference)) {
-                      Await.result(extAppender.apply(block).runToFuture, Duration.Inf) match {
-                        case Left(ve) =>
-                          log.error(s"Error appending block: $ve")
-                          quit = true
-                        case _ =>
-                          counter = counter + 1
+            @scala.annotation.tailrec
+            def cycle(quit: Boolean, counter: Int): Unit = {
+              if (!quit && counter < blocksToApply) {
+                val s1 = bis.read(lenBytes)
+                if (s1 == Ints.BYTES) {
+                  val len    = Ints.fromByteArray(lenBytes)
+                  val buffer = new Array[Byte](len)
+                  val s2     = bis.read(buffer)
+                  if (s2 == len) {
+                    if (blocksToSkip > 0) {
+                      blocksToSkip -= 1
+                      cycle(quit = false, counter)
+                    } else {
+                      val Right(block) =
+                        if (format == Formats.Binary) Block.parseBytes(buffer).toEither
+                        else PBBlocks.vanilla(PBBlocks.addChainId(protobuf.block.PBBlock.parseFrom(buffer)), unsafe = true)
+
+                      if (blockchainUpdater.lastBlockId.contains(block.reference)) {
+                        Await.result(extAppender.apply(block).runToFuture, Duration.Inf) match {
+                          case Left(ve) =>
+                            log.error(s"Error appending block: $ve")
+                            cycle(quit = true, counter)
+                          case _ =>
+                            cycle(quit = false, counter + 1)
+                        }
                       }
                     }
+                  } else {
+                    log.debug(s"$s2 != expected $len")
+                    cycle(quit = true, counter)
                   }
                 } else {
-                  log.debug(s"$s2 != expected $len")
-                  quit = true
+                  log.debug(s"Expecting to read ${Ints.BYTES} but got $s1 (${bis.available()})")
+                  cycle(quit = true, counter)
                 }
-              } else {
-                log.debug(s"Expecting to read ${Ints.BYTES} but got $s1 (${bis.available()})")
-                quit = true
               }
             }
             bis.close()
