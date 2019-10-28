@@ -41,10 +41,10 @@ object DApp {
     }
   }
   case class CallableAnnotation(invocationArgName: String) extends Annotation {
-    lazy val dic = Map(invocationArgName -> com.acrylplatform.lang.v1.evaluator.ctx.impl.acryl.Types.invocationType)
+    lazy val dic: Map[String, CASETYPEREF] = Map(invocationArgName -> com.acrylplatform.lang.v1.evaluator.ctx.impl.acryl.Types.invocationType)
   }
   case class VerifierAnnotation(invocationArgName: String) extends Annotation {
-    lazy val dic = Map(invocationArgName -> AcrylContext.verifierInput)
+    lazy val dic: Map[String, UNION] = Map(invocationArgName -> AcrylContext.verifierInput)
   }
 
   sealed trait AnnotatedFunction {

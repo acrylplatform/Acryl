@@ -22,7 +22,7 @@ class HistoryReplier(ng: NG, settings: SynchronizationSettings, scheduler: Sched
     .newBuilder()
     .maximumSize(historyReplierSettings.maxMicroBlockCacheSize)
     .build(new CacheLoader[MicroBlockSignature, Array[Byte]] {
-      override def load(key: MicroBlockSignature) =
+      override def load(key: MicroBlockSignature): Array[Byte] =
         ng.microBlock(key)
           .map(m => MicroBlockResponseSpec.serializeData(MicroBlockResponse(m)))
           .get
@@ -32,7 +32,7 @@ class HistoryReplier(ng: NG, settings: SynchronizationSettings, scheduler: Sched
     .newBuilder()
     .maximumSize(historyReplierSettings.maxBlockCacheSize)
     .build(new CacheLoader[ByteStr, Array[Byte]] {
-      override def load(key: ByteStr) = ng.blockBytes(key).get
+      override def load(key: ByteStr): Array[Byte] = ng.blockBytes(key).get
     })
 
   override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = msg match {
@@ -53,7 +53,10 @@ class HistoryReplier(ng: NG, settings: SynchronizationSettings, scheduler: Sched
       }.runAsyncLogErr
 
     case GetBlock(sig) =>
-      Task(knownBlocks.get(sig)).map(bytes => ctx.writeAndFlush(RawBytes(BlockSpec.messageCode, bytes))).logErrDiscardNoSuchElementException.runAsync
+      Task(knownBlocks.get(sig))
+        .map(bytes => ctx.writeAndFlush(RawBytes(BlockSpec.messageCode, bytes)))
+        .logErrDiscardNoSuchElementException
+        .runToFuture
 
     case mbr @ MicroBlockRequest(totalResBlockSig) =>
       Task(knownMicroBlocks.get(totalResBlockSig))
@@ -62,7 +65,7 @@ class HistoryReplier(ng: NG, settings: SynchronizationSettings, scheduler: Sched
           log.trace(id(ctx) + s"Sent MicroBlockResponse(total=${totalResBlockSig.trim})")
         }
         .logErrDiscardNoSuchElementException
-        .runAsync
+        .runToFuture
 
     case _: Handshake =>
       Task {

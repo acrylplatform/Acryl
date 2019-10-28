@@ -36,7 +36,7 @@ class LeaseCancelTransactionSpecification extends PropSpec with PropertyChecks w
     val js = Json.parse("""{
                        "type": 9,
                        "id": "7hmabbFS8a2z79a29pzZH1s8LHxrsEAnnLjJxNdZ1gGw",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 1000000,
                        "feeAssetId": null,
@@ -66,8 +66,8 @@ class LeaseCancelTransactionSpecification extends PropSpec with PropertyChecks w
   property("JSON format validation for LeaseCancelTransactionV2") {
     val js = Json.parse("""{
                         "type": 9,
-                        "id": "4nvUUiQjTH7D2LFyzaxs8JwaZYZHDggJgq1iP99TvVDM",
-                        "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                        "id": "9W6hQwAS7ddqT1s9rQE871qFZyJdTzZrdC1zSt7uFMFr",
+                        "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                         "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                         "fee": 1000000,
                         "feeAssetId":null,
@@ -77,13 +77,13 @@ class LeaseCancelTransactionSpecification extends PropSpec with PropertyChecks w
                         ],
                         "version": 2,
                         "leaseId": "DJWkQxRyJNqWhq9qSQpK2D4tsrct6eZbjSv3AH4PSha6",
-                        "chainId": 84
+                        "chainId": 75
                        }
     """)
 
     val tx = LeaseCancelTransactionV2
       .create(
-        'T',
+        'K',
         PublicKey.fromBase58String("FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z").explicitGet(),
         ByteStr.decodeBase58("DJWkQxRyJNqWhq9qSQpK2D4tsrct6eZbjSv3AH4PSha6").get,
         1000000,

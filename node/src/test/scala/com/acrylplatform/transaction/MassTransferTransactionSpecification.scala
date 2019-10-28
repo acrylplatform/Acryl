@@ -78,8 +78,8 @@ class MassTransferTransactionSpecification extends PropSpec with PropertyChecks 
   property(testName = "JSON format validation") {
     val js = Json.parse("""{
                        "type": 11,
-                       "id": "H36CTJc7ztGRZPCrvpNYeagCN1HV1gXqUthsXKdBT3UD",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "id": "CGhcg6UyfpKLRQuaayxZRmsB6UdwiDFRsuyDeuTAA9k1",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 200000,
                        "feeAssetId": null,
@@ -93,11 +93,11 @@ class MassTransferTransactionSpecification extends PropSpec with PropertyChecks 
                        "totalAmount": 300000000,
                        "transfers": [
                        {
-                       "recipient": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "recipient": "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
                        "amount": 100000000
                        },
                        {
-                       "recipient": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "recipient": "3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB",
                        "amount": 200000000
                        }
                        ]
@@ -106,7 +106,7 @@ class MassTransferTransactionSpecification extends PropSpec with PropertyChecks 
 
     val transfers = MassTransferTransaction
       .parseTransfersList(
-        List(Transfer("3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh", 100000000L), Transfer("3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh", 200000000L)))
+        List(Transfer("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB", 100000000L), Transfer("3JGXFfC7P6oyvv3gXohbLoRzSvQWZeFBNNB", 200000000L)))
       .right
       .get
 

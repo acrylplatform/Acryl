@@ -7,7 +7,7 @@ import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.features.BlockchainFeatures
 import com.acrylplatform.features.FeatureProvider._
 import com.acrylplatform.lang.script.Script
-import com.acrylplatform.state.diffs.CommonValidation
+import com.acrylplatform.state.diffs.FeeValidation
 import com.acrylplatform.transaction.Asset.IssuedAsset
 import com.acrylplatform.transaction.{Asset, Transaction}
 import play.api.libs.json._
@@ -112,13 +112,13 @@ object Sponsorship {
 
   def toAcryl(assetFee: Long, sponsorship: Long): Long = {
     if (sponsorship == 0) return Long.MaxValue
-    val acryl = BigInt(assetFee) * CommonValidation.FeeUnit / sponsorship
+    val acryl = BigInt(assetFee) * FeeValidation.FeeUnit / sponsorship
     acryl.bigInteger.longValueExact()
   }
 
   def fromAcryl(acrylFee: Long, sponsorship: Long): Long = {
     if (acrylFee == 0 || sponsorship == 0) return 0
-    val assetFee = BigInt(acrylFee) * sponsorship / CommonValidation.FeeUnit
+    val assetFee = BigInt(acrylFee) * sponsorship / FeeValidation.FeeUnit
     assetFee.bigInteger.longValueExact()
   }
 }

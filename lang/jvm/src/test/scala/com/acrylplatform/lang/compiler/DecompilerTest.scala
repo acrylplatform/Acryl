@@ -16,19 +16,19 @@ import com.acrylplatform.lang.v1.evaluator.ctx.impl._
 import com.acrylplatform.lang.v1.parser.Parser
 import com.acrylplatform.lang.v1.parser.BinaryOperation.NE_OP
 import com.acrylplatform.lang.v1.{CTX, FunctionHeader}
-import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.{Assertion, Matchers, PropSpec}
 import org.scalatestplus.scalacheck.{ScalaCheckPropertyChecks => PropertyChecks}
 
 class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
 
   implicit class StringCmp(s1: String) {
-    def shouldEq(s2: String) = s1.replace("\r\n", "\n") shouldEqual s2.replace("\r\n", "\n")
+    def shouldEq(s2: String): Assertion = s1.replace("\r\n", "\n") shouldEqual s2.replace("\r\n", "\n")
   }
 
   val CTX: CTX =
     Monoid.combineAll(Seq(testContext, CryptoContext.build(Global, V3)))
 
-  val decompilerContext = CTX.decompilerContext
+  val decompilerContext: DecompilerContext = CTX.decompilerContext
 
   property("successful on very deep expressions (stack overflow check)") {
     val expr = (1 to 10000).foldLeft[EXPR](CONST_LONG(0)) { (acc, _) =>
@@ -233,7 +233,8 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
                     Native(1100),
                     List(
                       FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("b").explicitGet(), CONST_LONG(1))),
-                      FUNCTION_CALL(Native(1100), List(FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("sender").explicitGet(), REF("x"))), REF("nil")))
+                      FUNCTION_CALL(Native(1100),
+                                    List(FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("sender").explicitGet(), REF("x"))), REF("nil")))
                     )
                   ))
                 ),
@@ -243,7 +244,8 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
                     Native(1100),
                     List(
                       FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("a").explicitGet(), REF("a"))),
-                      FUNCTION_CALL(Native(1100), List(FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("sender").explicitGet(), REF("x"))), REF("nil")))
+                      FUNCTION_CALL(Native(1100),
+                                    List(FUNCTION_CALL(User("DataEntry"), List(CONST_STRING("sender").explicitGet(), REF("x"))), REF("nil")))
                     )
                   ))
                 )
@@ -482,7 +484,7 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
 
   def compile(code: String): Either[String, (EXPR, TYPE)] = {
     val untyped = Parser.parseExpr(code).get.value
-    val typed = ExpressionCompiler(compilerContext, untyped)
+    val typed   = ExpressionCompiler(compilerContext, untyped)
     typed
   }
 
@@ -494,7 +496,7 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
     }"""
 
     val Right((expr, ty)) = compile(script)
- 
+
     val rev = Decompiler(expr, decompilerContext)
 
     rev shouldEq """match tv {
@@ -515,7 +517,7 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
     }"""
 
     val Right((expr, ty)) = compile(script)
- 
+
     val rev = Decompiler(expr, decompilerContext)
 
     rev shouldEq """match tv {
@@ -534,7 +536,7 @@ class DecompilerTest extends PropSpec with PropertyChecks with Matchers {
     }"""
 
     val Right((expr, ty)) = compile(script)
- 
+
     val rev = Decompiler(expr, decompilerContext)
 
     rev shouldEq """match tv {

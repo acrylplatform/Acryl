@@ -1,7 +1,7 @@
 package com.acrylplatform.state
 
 case class BalanceSnapshot(height: Int, regularBalance: Long, leaseIn: Long, leaseOut: Long) {
-  lazy val effectiveBalance = regularBalance + leaseIn - leaseOut
+  lazy val effectiveBalance: Long = regularBalance + leaseIn - leaseOut
 }
 
 object BalanceSnapshot {

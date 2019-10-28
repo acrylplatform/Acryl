@@ -2,6 +2,7 @@ package com.acrylplatform.settings
 
 import com.typesafe.config.Config
 import com.acrylplatform.common.state.ByteStr
+import com.acrylplatform.features.BlockchainFeatures
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.EnumerationReader._
@@ -62,15 +63,24 @@ object FunctionalitySettings {
     allowMultipleLeaseCancelTransactionUntilTimestamp = 0,
     resetEffectiveBalancesAtHeight = 1,
     blockVersion3AfterHeight = 0,
-    preActivatedFeatures = Map.empty,
+    preActivatedFeatures = Map(
+      BlockchainFeatures.SmallerMinimalGeneratingBalance.id -> 0,
+      BlockchainFeatures.NG.id                              -> 0,
+      BlockchainFeatures.MassTransfer.id                    -> 0,
+      BlockchainFeatures.SmartAccounts.id                   -> 0,
+      BlockchainFeatures.DataTransaction.id                 -> 0,
+      BlockchainFeatures.BurnAnyTokens.id                   -> 0,
+      BlockchainFeatures.FeeSponsorship.id                  -> 0,
+      BlockchainFeatures.FairPoS.id                         -> 0
+    ),
     doubleFeaturesPeriodsAfterHeight = 0,
     maxTransactionTimeBackOffset = 120.minutes,
     maxTransactionTimeForwardOffset = 90.minutes
   )
 
   val TESTNET = apply(
-    featureCheckBlocksPeriod = 30,
-    blocksForFeatureActivation = 25,
+    featureCheckBlocksPeriod = 180,
+    blocksForFeatureActivation = 180,
     allowTemporaryNegativeUntil = 0,
     generationBalanceDepthFrom50To1000AfterHeight = 0,
     minimalGeneratingBalanceAfter = 0,
@@ -80,7 +90,21 @@ object FunctionalitySettings {
     allowMultipleLeaseCancelTransactionUntilTimestamp = 0,
     resetEffectiveBalancesAtHeight = 1,
     blockVersion3AfterHeight = 0,
-    preActivatedFeatures = Map.empty,
+    preActivatedFeatures = Map(
+      BlockchainFeatures.SmallerMinimalGeneratingBalance.id -> 0,
+      BlockchainFeatures.NG.id                              -> 0,
+      BlockchainFeatures.MassTransfer.id                    -> 0,
+      BlockchainFeatures.SmartAccounts.id                   -> 0,
+      BlockchainFeatures.DataTransaction.id                 -> 0,
+      BlockchainFeatures.BurnAnyTokens.id                   -> 0,
+      BlockchainFeatures.FeeSponsorship.id                  -> 0,
+      BlockchainFeatures.FairPoS.id                         -> 0,
+      BlockchainFeatures.SmartAssets.id                     -> 0,
+      BlockchainFeatures.SmartAccountTrading.id             -> 0,
+      BlockchainFeatures.Ride4DApps.id                      -> 0,
+      BlockchainFeatures.OrderV3.id                         -> 0,
+      BlockchainFeatures.ReduceNFTFee.id                    -> 0
+    ),
     doubleFeaturesPeriodsAfterHeight = 0,
     maxTransactionTimeBackOffset = 120.minutes,
     maxTransactionTimeForwardOffset = 90.minutes
@@ -129,9 +153,9 @@ object GenesisSettings {
 case class BlockchainSettings(addressSchemeCharacter: Char, functionalitySettings: FunctionalitySettings, genesisSettings: GenesisSettings)
 
 object BlockchainType extends Enumeration {
-  val TESTNET = Value("TESTNET")
-  val MAINNET = Value("MAINNET")
-  val CUSTOM  = Value("CUSTOM")
+  val TESTNET: BlockchainType.Value = Value("TESTNET")
+  val MAINNET: BlockchainType.Value = Value("MAINNET")
+  val CUSTOM: BlockchainType.Value  = Value("CUSTOM")
 }
 
 object BlockchainSettings {

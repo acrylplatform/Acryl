@@ -44,8 +44,8 @@ class IssueTransactionV2Specification extends PropSpec with PropertyChecks with 
   property("JSON format validation") {
     val js = Json.parse("""{
                        "type": 3,
-                       "id": "2ykNAo5JrvNCcL8PtCmc9pTcNtKUy2PjJkrFdRvTfUf4",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "id": "4NVCBkkvYboyP6wK6LHP2pn5CUodyXcKdGsQtRgadMqi",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 100000000,
                        "feeAssetId": null,
@@ -54,8 +54,8 @@ class IssueTransactionV2Specification extends PropSpec with PropertyChecks with 
                        "43TCfWBa6t2o2ggsD4bU9FpvH3kmDbSBWKE1Z6B5i5Ax5wJaGT2zAvBihSbnSS3AikZLcicVWhUk1bQAMWVzTG5g"
                        ],
                        "version": 2,
-                       "assetId": "2ykNAo5JrvNCcL8PtCmc9pTcNtKUy2PjJkrFdRvTfUf4",
-                       "chainId": 84,
+                       "assetId": "4NVCBkkvYboyP6wK6LHP2pn5CUodyXcKdGsQtRgadMqi",
+                       "chainId": 75,
                        "name": "Gigacoin",
                        "quantity": 10000000000,
                        "reissuable": true,
@@ -67,7 +67,7 @@ class IssueTransactionV2Specification extends PropSpec with PropertyChecks with 
 
     val tx = IssueTransactionV2
       .create(
-        'T',
+        'K',
         PublicKey.fromBase58String("FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z").explicitGet(),
         "Gigacoin".getBytes("UTF-8"),
         "Gigacoin".getBytes("UTF-8"),
@@ -109,7 +109,7 @@ class IssueTransactionV2Specification extends PropSpec with PropertyChecks with 
             CryptoContext.build(Global, V3),
             AcrylContext.build(
               DirectiveSet(V3, Account, Expression).explicitGet(),
-              new AcrylEnvironment('T'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
+              new AcrylEnvironment('K'.toByte, Coeval(???), Coeval(???), EmptyBlockchain, Coeval(???))
             )
           ))
     }
@@ -118,7 +118,7 @@ class IssueTransactionV2Specification extends PropSpec with PropertyChecks with 
 
     val tx = IssueTransactionV2
       .create(
-        'T',
+        'K',
         PublicKey.fromBase58String("FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z").explicitGet(),
         "Gigacoin".getBytes("UTF-8"),
         "Gigacoin".getBytes("UTF-8"),

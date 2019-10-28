@@ -106,7 +106,7 @@ class AcrylEnvironment(nByte: Byte, in: Coeval[AcrylEnvironment.In], h: Coeval[I
   }
 
   override def lastBlockOpt(): Option[BlockInfo] =
-    blockchain.lastBlock.map(block => toBlockInfo(block.getHeader(), height.toInt))
+    blockchain.lastBlock.map(block => toBlockInfo(block.getHeader, height.toInt))
 
   override def blockInfoByHeight(blockHeight: Int): Option[BlockInfo] =
     blockchain.blockHeaderAndSize(blockHeight).map(blockHAndSize => toBlockInfo(blockHAndSize._1, blockHeight))

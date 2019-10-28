@@ -40,7 +40,7 @@ object AcrylSettings extends CustomValueReaders {
     val synchronizationSettings   = acryl.as[SynchronizationSettings]("synchronization")
     val utxSettings               = acryl.as[UtxSettings]("utx")
     val featuresSettings          = acryl.as[FeaturesSettings]("features")
-    val metrics                   = rootConfig.as[Metrics.Settings]("metrics") // TODO: Move to acryl section
+    val metrics                   = acryl.as[Metrics.Settings]("metrics")
 
     AcrylSettings(
       directory,

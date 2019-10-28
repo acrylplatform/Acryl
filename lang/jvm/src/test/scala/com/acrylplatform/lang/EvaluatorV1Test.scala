@@ -29,17 +29,15 @@ import org.scalatestplus.scalacheck.{ScalaCheckPropertyChecks => PropertyChecks}
 import scorex.crypto.hash.{Blake2b256, Keccak256, Sha256}
 import scorex.crypto.signatures.{Curve25519, PublicKey, Signature}
 
-import scala.util.Try
-
 class EvaluatorV1Test extends PropSpec with PropertyChecks with Matchers with ScriptGen with NoShrink {
 
-  val version = V3
+  val version: V3.type = V3
 
   private val pureContext = PureContext.build(Global, version)
 
   private val defaultCryptoContext = CryptoContext.build(Global, version)
 
-  val blockBuilder: Gen[(LET, EXPR) => EXPR] = Gen.oneOf(true, false).map(if (_) (BLOCK.apply _) else (LET_BLOCK.apply _))
+  val blockBuilder: Gen[(LET, EXPR) => EXPR] = Gen.oneOf(true, false).map(if (_) BLOCK.apply else LET_BLOCK.apply)
 
   private def defaultFullContext(environment: Environment): CTX = Monoid.combineAll(
     Seq(

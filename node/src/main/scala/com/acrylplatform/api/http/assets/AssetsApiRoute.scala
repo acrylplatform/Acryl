@@ -43,20 +43,20 @@ import scala.util.Success
 @Path("/assets")
 @Api(value = "assets")
 case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPool, allChannels: ChannelGroup, blockchain: Blockchain, time: Time)(
-  implicit ec: Scheduler)
+    implicit ec: Scheduler)
     extends ApiRoute
     with BroadcastRoute
     with WithSettings {
 
   private[this] val commonAccountApi = new CommonAccountApi(blockchain)
-  private[this] val commonAssetsApi = new CommonAssetsApi(blockchain)
+  private[this] val commonAssetsApi  = new CommonAssetsApi(blockchain)
 
   private[this] val distributionTaskScheduler = {
     val executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue[Runnable](AssetsApiRoute.MAX_DISTRIBUTION_TASKS))
     Scheduler(executor)
   }
 
-  override lazy val route =
+  override lazy val route: Route =
     pathPrefix("assets") {
       balance ~ balances ~ nft ~ issue ~ reissue ~ burnRoute ~ transfer ~ massTransfer ~ signOrder ~ balanceDistributionAtHeight ~ balanceDistribution ~ details ~ sponsorRoute
     }
@@ -77,8 +77,7 @@ case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPoo
     val (asset, height, limit, maybeAfter) = params
 
     val distributionTask = Task.eval(
-      blockchain
-        .assetDistributionAtHeight(asset, height, limit, maybeAfter)
+      blockchain.assetDistributionAtHeight(asset, height, limit, maybeAfter)
     )
 
     distributionTask.map {
@@ -95,7 +94,7 @@ case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPoo
       new ApiImplicitParam(name = "assetId", value = "Asset ID", required = true, dataType = "string", paramType = "path")
     ))
   def balanceDistribution: Route =
-    (get & path(Segment / "distribution")) { (assetParam) =>
+    (get & path(Segment / "distribution")) { assetParam =>
       val assetEi = AssetsApiRoute
         .validateAssetId(assetParam)
 
@@ -208,7 +207,7 @@ case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPoo
         .map(_.json())
         .toListL
         .map(lst => JsArray(lst))
-        .runAsync
+        .runToFuture
     }
 
     complete(response)
@@ -266,7 +265,7 @@ case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPoo
         "address" -> acc.address,
         "balances" -> JsArray(
           (for {
-            (asset @ IssuedAsset(assetId), balance) <- commonAccountApi.portfolio(acc) if balance > 0
+            (asset @ IssuedAsset(assetId), balance)                                <- commonAccountApi.portfolio(acc) if balance > 0
             CommonAssetsApi.AssetInfo(assetInfo, issueTransaction, sponsorBalance) <- commonAssetsApi.fullInfo(asset)
           } yield
             Json.obj(

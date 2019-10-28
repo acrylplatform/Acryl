@@ -130,13 +130,13 @@ class SponsorshipDiffTest extends PropSpec with PropertyChecks with Matchers wit
         assertDiffEi(setupBlocks, block(Seq(insufficientFee)), s) { blockDiffEi =>
           val minFee = Sponsorship
             .fromAcryl(
-              CommonValidation.FeeConstants(insufficientFee.builder.typeId) * CommonValidation.FeeUnit,
+              FeeValidation.OldFeeUnits(insufficientFee.builder.typeId) * FeeValidation.FeeUnit,
               sponsor.minSponsoredAssetFee.get
             )
 
           val expectedError =
-            s"Fee for TransferTransaction (${insufficientFee.fee} in ${issue.assetId().base58})" ++
-              s" does not exceed minimal value of 100000 ACRYL or $minFee ${issue.assetId().base58}"
+            s"Fee for TransferTransaction (${insufficientFee.fee} in ${issue.assetId.base58})" ++
+              s" does not exceed minimal value of 100000 ACRYL or $minFee ${issue.assetId.base58}"
 
           blockDiffEi should produce(expectedError)
         }

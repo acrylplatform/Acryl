@@ -26,7 +26,12 @@ import scala.util.Success
 
 @Path("/transactions")
 @Api(value = "/transactions")
-case class TransactionsApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain: Blockchain, utx: UtxPool, allChannels: ChannelGroup, time: Time)(implicit sc: Scheduler)
+case class TransactionsApiRoute(settings: RestAPISettings,
+                                wallet: Wallet,
+                                blockchain: Blockchain,
+                                utx: UtxPool,
+                                allChannels: ChannelGroup,
+                                time: Time)(implicit sc: Scheduler)
     extends ApiRoute
     with BroadcastRoute
     with CommonApiFunctions
@@ -34,7 +39,8 @@ case class TransactionsApiRoute(settings: RestAPISettings, wallet: Wallet, block
 
   import com.acrylplatform.network._
 
-  private[this] val commonApi = new CommonTransactionsApi(blockchain, utx, wallet, (tx, isNew) => if (isNew || settings.allowTxRebroadcasting) allChannels.broadcastTx(tx, None))
+  private[this] val commonApi =
+    new CommonTransactionsApi(blockchain, utx, wallet, (tx, isNew) => if (isNew || settings.allowTxRebroadcasting) allChannels.broadcastTx(tx, None))
 
   override lazy val route =
     pathPrefix("transactions") {
@@ -76,7 +82,7 @@ case class TransactionsApiRoute(settings: RestAPISettings, wallet: Wallet, block
           case Success(id) =>
             commonApi.transactionById(id) match {
               case Some((h, tx)) => complete(txToExtendedJson(tx) + ("height" -> JsNumber(h)))
-              case None => complete(ApiError.TransactionDoesNotExist)
+              case None          => complete(ApiError.TransactionDoesNotExist)
             }
           case _ => complete(InvalidSignature)
         }
@@ -249,7 +255,7 @@ case class TransactionsApiRoute(settings: RestAPISettings, wallet: Wallet, block
         .take(limit)
         .toListL
         .map(txs => Json.arr(JsArray(txs.map { case (height, tx) => txToCompactJson(address, tx) + ("height" -> JsNumber(height)) })))
-        .runAsync
+        .runToFuture
     }
 
     for {

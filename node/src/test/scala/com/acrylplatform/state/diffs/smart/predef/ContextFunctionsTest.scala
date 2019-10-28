@@ -20,12 +20,13 @@ import com.acrylplatform.lang.v1.{FunctionHeader, compiler}
 import com.acrylplatform.lang.{Global, utils}
 import com.acrylplatform.state._
 import com.acrylplatform.state.diffs.smart.smartEnabledFS
-import com.acrylplatform.state.diffs.{CommonValidation, ENOUGH_AMT, assertDiffAndState}
+import com.acrylplatform.state.diffs.{ENOUGH_AMT, FeeValidation, assertDiffAndState}
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.{DataTransaction, GenesisTransaction}
 import com.acrylplatform.transaction.assets.IssueTransactionV2
 import com.acrylplatform.transaction.smart.script.ScriptCompiler
-import com.acrylplatform.transaction.smart.{InvokeScriptTransaction, SetScriptTransaction, AcrylEnvironment}
+import com.acrylplatform.transaction.smart.{AcrylEnvironment, InvokeScriptTransaction, SetScriptTransaction}
+import com.acrylplatform.transaction.transfer.{TransferTransactionV1, TransferTransactionV2}
 import com.acrylplatform.utils.EmptyBlockchain
 import com.acrylplatform.{NoShrink, TransactionGen}
 import monix.eval.Coeval
@@ -45,7 +46,8 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
       tx   <- dataTransactionGenP(sender, List(long, bool, bin, str))
     } yield tx
 
-  val preconditionsAndPayments = for {
+  val preconditionsAndPayments
+    : Gen[(KeyPair, Seq[GenesisTransaction], SetScriptTransaction, DataTransaction, TransferTransactionV1, TransferTransactionV2)] = for {
     master    <- accountGen
     recipient <- accountGen
     ts        <- positiveIntGen
@@ -86,7 +88,7 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
   property("reading from data transaction array by key") {
     forAll(preconditionsAndPayments) {
       case (_, _, _, tx, _, _) =>
-        val int  = tx.data(0)
+        val int  = tx.data.head
         val bool = tx.data(1)
         val bin  = tx.data(2)
         val str  = tx.data(3)
@@ -140,7 +142,7 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
   property("reading from data transaction array by index") {
     forAll(preconditionsAndPayments, Gen.choose(4, 40)) {
       case ((_, _, _, tx, _, _), badIndex) =>
-        val int  = tx.data(0)
+        val int  = tx.data.head
         val bool = tx.data(1)
         val bin  = tx.data(2)
         val str  = tx.data(3)
@@ -302,7 +304,7 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
 
           append(Seq(transferTx, issueTx)).explicitGet()
 
-          val assetId = issueTx.assetId.value
+          val assetId = issueTx.assetId
           val script = ScriptCompiler
             .compile(
               s"""
@@ -467,8 +469,8 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
           }
 
           val compiledScript = ContractScript(V3, compiler.ContractCompiler(ctx.compilerContext, expr).explicitGet()).explicitGet()
-          val setScriptTx = SetScriptTransaction.selfSigned(masterAcc, Some(compiledScript), 1000000L, transferTx.timestamp + 5).explicitGet()
-          val fc = Terms.FUNCTION_CALL(FunctionHeader.User("compareBlocks"), List.empty)
+          val setScriptTx    = SetScriptTransaction.selfSigned(masterAcc, Some(compiledScript), 1000000L, transferTx.timestamp + 5).explicitGet()
+          val fc             = Terms.FUNCTION_CALL(FunctionHeader.User("compareBlocks"), List.empty)
 
           val ci = InvokeScriptTransaction
             .selfSigned(
@@ -476,7 +478,7 @@ class ContextFunctionsTest extends PropSpec with PropertyChecks with Matchers wi
               masterAcc,
               Some(fc),
               Seq.empty,
-              CommonValidation.FeeUnit * (CommonValidation.FeeConstants(InvokeScriptTransaction.typeId) + CommonValidation.ScriptExtraFee),
+              FeeValidation.FeeUnit * (FeeValidation.FeeUnits(InvokeScriptTransaction.typeId) + FeeValidation.ScriptExtraFee),
               Acryl,
               System.currentTimeMillis()
             )

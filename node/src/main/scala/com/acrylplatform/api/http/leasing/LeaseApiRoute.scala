@@ -26,7 +26,7 @@ case class LeaseApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain: 
 
   private[this] val commonAccountApi = new CommonAccountApi(blockchain)
 
-  override val route = pathPrefix("leasing") {
+  override val route: Route = pathPrefix("leasing") {
     lease ~ cancel ~ active
   }
 
@@ -40,15 +40,19 @@ case class LeaseApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain: 
     Array(
       new ApiImplicitParam(name = "address", value = "Wallet address ", required = true, dataType = "string", paramType = "path")
     ))
-  def active: Route = (pathPrefix("active") & get) {
+  def active: Route = (pathPrefix("active") & get & extractScheduler) { implicit sc =>
     pathPrefix(Segment) { address =>
       complete(Address.fromString(address) match {
         case Left(e) => ApiError.fromValidationError(e)
         case Right(a) =>
-          commonAccountApi.activeLeases(a).map(_.collect {
-            case (height, leaseTransaction: LeaseTransaction) =>
-              leaseTransaction.json() + ("height" -> JsNumber(height))
-          })
+          commonAccountApi
+            .activeLeases(a)
+            .collect {
+              case (height, leaseTransaction: LeaseTransaction) =>
+                leaseTransaction.json() + ("height" -> JsNumber(height))
+            }
+            .toListL
+            .runToFuture
       })
     }
   }

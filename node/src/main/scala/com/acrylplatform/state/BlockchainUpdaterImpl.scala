@@ -15,21 +15,26 @@ import com.acrylplatform.lang.ValidationError
 import com.acrylplatform.lang.script.Script
 import com.acrylplatform.metrics.{TxsInBlockchainStats, _}
 import com.acrylplatform.mining.{MiningConstraint, MiningConstraints, MultiDimensionalMiningConstraint}
-import com.acrylplatform.settings.{BlockchainSettings, AcrylSettings}
+import com.acrylplatform.settings.{AcrylSettings, BlockchainSettings}
 import com.acrylplatform.state.diffs.BlockDiffer
+import com.acrylplatform.state.extensions.composite.{CompositeAddressTransactions, CompositeDistributions}
+import com.acrylplatform.state.extensions.{AddressTransactions, Distributions}
 import com.acrylplatform.state.reader.{CompositeBlockchain, LeaseDetails}
 import com.acrylplatform.transaction.Asset.IssuedAsset
 import com.acrylplatform.transaction.TxValidationError.{BlockAppendError, GenericError, MicroBlockAppendError}
 import com.acrylplatform.transaction._
-import com.acrylplatform.transaction.assets.IssueTransaction
 import com.acrylplatform.transaction.lease._
 import com.acrylplatform.transaction.transfer.TransferTransaction
-import com.acrylplatform.utils.{CloseableIterator, ScorexLogging, Time, UnsupportedFeature, forceStopApplication}
+import com.acrylplatform.utils.{ScorexLogging, Time, UnsupportedFeature, forceStopApplication}
 import kamon.Kamon
+import kamon.metric.{CounterMetric, HistogramMetric, TimerMetric}
 import monix.reactive.subjects.ReplaySubject
 import monix.reactive.{Observable, Observer}
 
-class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: Observer[(Address, Asset)], AcrylSettings: AcrylSettings, time: Time)
+class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
+                            spendableBalanceChanged: Observer[(Address, Asset)],
+                            AcrylSettings: AcrylSettings,
+                            time: Time)
     extends BlockchainUpdater
     with NG
     with ScorexLogging {
@@ -64,6 +69,9 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
     }
 
   publishLastBlockInfo()
+
+  @noinline
+  def bestLiquidDiff: Option[Diff] = readLock(ngState.map(_.bestLiquidDiff))
 
   override val settings: BlockchainSettings = AcrylSettings.blockchainSettings
 
@@ -447,11 +455,6 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
       blockchain.blockHeaderAndSize(height)
   }
 
-  override def portfolio(a: Address): Portfolio = readLock {
-    val p = ngState.fold(Portfolio.empty)(_.bestLiquidDiff.portfolios.getOrElse(a, Portfolio.empty))
-    blockchain.portfolio(a).combine(p)
-  }
-
   private[this] def portfolioAt(a: Address, mb: ByteStr): Portfolio = readLock {
     val diffPf  = ngState.fold(Portfolio.empty)(_.diffFor(mb)._1.portfolios.getOrElse(a, Portfolio.empty))
     val lease   = blockchain.leaseBalance(a)
@@ -478,18 +481,6 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
       .map(t => (t._1, t._2))
       .orElse(blockchain.transactionInfo(id))
   }
-
-  override def nftList(address: Address, from: Option[IssuedAsset]): CloseableIterator[IssueTransaction] =
-    readLock {
-      nftListFromDiff(blockchain, ngState.map(_.bestLiquidDiff))(address, from)
-    }
-
-  override def addressTransactions(address: Address,
-                                   types: Set[TransactionParser],
-                                   fromId: Option[ByteStr]): CloseableIterator[(Height, Transaction)] =
-    readLock {
-      addressTransactionsFromDiff(blockchain, ngState.map(_.bestLiquidDiff))(address, types, fromId)
-    }
 
   override def containsTransaction(tx: Transaction): Boolean = readLock {
     ngState.fold(blockchain.containsTransaction(tx)) { ng =>
@@ -598,49 +589,15 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
     }
   }
 
-  private def changedBalances(pred: Portfolio => Boolean, f: Address => Long): Map[Address, Long] = readLock {
-    ngState
-      .fold(Map.empty[Address, Long]) { ng =>
-        for {
-          (address, p) <- ng.bestLiquidDiff.portfolios
-          if pred(p)
-        } yield address -> f(address)
-      }
-  }
-
-  override def assetDistribution(assetId: IssuedAsset): AssetDistribution = readLock {
-    val fromInner = blockchain.assetDistribution(assetId)
-    val fromNg    = AssetDistribution(changedBalances(_.assets.getOrElse(assetId, 0L) != 0, balance(_, assetId)))
-
-    fromInner |+| fromNg
-  }
-
-  override def assetDistributionAtHeight(assetId: IssuedAsset,
-                                         height: Int,
-                                         count: Int,
-                                         fromAddress: Option[Address]): Either[ValidationError, AssetDistributionPage] = readLock {
-    blockchain.assetDistributionAtHeight(assetId, height, count, fromAddress)
-  }
-
-  override def acrylDistribution(height: Int): Either[ValidationError, Map[Address, Long]] = readLock {
-    ngState.fold(blockchain.acrylDistribution(height)) { _ =>
-      val innerDistribution = blockchain.acrylDistribution(height)
-      if (height < this.height) innerDistribution
-      else {
-        innerDistribution.map(_ ++ changedBalances(_.balance != 0, balance(_)))
-      }
-    }
-  }
-
-  override def allActiveLeases: CloseableIterator[LeaseTransaction] = readLock {
-    ngState.fold(blockchain.allActiveLeases) { ng =>
+  override def collectActiveLeases[T](pf: PartialFunction[LeaseTransaction, T]): Seq[T] = {
+    ngState.fold(blockchain.collectActiveLeases(pf)) { ng =>
       val (active, canceled) = ng.bestLiquidDiff.leaseState.partition(_._2)
-      val fromDiff = active.keysIterator
+      val fromDiff = active.keys
         .map(id => ng.bestLiquidDiff.transactions(id)._2)
-        .collect { case lt: LeaseTransaction => lt }
+        .collect { case lt: LeaseTransaction if pf.isDefinedAt(lt) => pf(lt) }
 
-      val fromInner = blockchain.allActiveLeases.filterNot(ltx => canceled.keySet.contains(ltx.id()))
-      CloseableIterator.seq(fromDiff, fromInner)
+      val fromInner = blockchain.collectActiveLeases { case lt if !canceled.keySet.contains(lt.id()) && pf.isDefinedAt(lt) => pf(lt) }
+      fromDiff.toVector ++ fromInner
     }
   }
 
@@ -667,16 +624,6 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
     }
   }
 
-  /* override def transactionsIterator(ofTypes: Seq[TransactionParser], reverse: Boolean): CloseableIterator[(Height, Transaction)] = {
-    ngState.fold(blockchain.transactionsIterator(ofTypes, reverse)) { ng =>
-      val typeSet = ofTypes.toSet
-      val ngTransactions = ng.bestLiquidDiff.transactions.valuesIterator
-        .collect { case (_, tx, _) if typeSet.isEmpty || typeSet.contains(tx.builder) => (Height(this.height), tx) }
-
-      CloseableIterator.seq(ngTransactions, blockchain.transactionsIterator(ofTypes, reverse))
-    }
-  } */
-
   override def transactionHeight(id: ByteStr): Option[Int] = readLock {
     ngState flatMap { ng =>
       ng.bestLiquidDiff.transactions.get(id).map(_._1)
@@ -701,19 +648,29 @@ class BlockchainUpdaterImpl(blockchain: LevelDBWriter, spendableBalanceChanged: 
     }
   }
 
+  //noinspection ScalaStyle
   private[this] object metrics {
-    val blockMicroForkStats       = Kamon.counter("blockchain-updater.block-micro-fork")
-    val microMicroForkStats       = Kamon.counter("blockchain-updater.micro-micro-fork")
-    val microBlockForkStats       = Kamon.counter("blockchain-updater.micro-block-fork")
-    val microBlockForkHeightStats = Kamon.histogram("blockchain-updater.micro-block-fork-height")
-    val forgeBlockTimeStats       = Kamon.timer("blockchain-updater.forge-block-time")
+    val blockMicroForkStats: CounterMetric         = Kamon.counter("blockchain-updater.block-micro-fork")
+    val microMicroForkStats: CounterMetric         = Kamon.counter("blockchain-updater.micro-micro-fork")
+    val microBlockForkStats: CounterMetric         = Kamon.counter("blockchain-updater.micro-block-fork")
+    val microBlockForkHeightStats: HistogramMetric = Kamon.histogram("blockchain-updater.micro-block-fork-height")
+    val forgeBlockTimeStats: TimerMetric           = Kamon.timer("blockchain-updater.forge-block-time")
   }
 }
 
-object BlockchainUpdaterImpl extends ScorexLogging {
+object BlockchainUpdaterImpl
+    extends ScorexLogging
+    with AddressTransactions.Prov[BlockchainUpdaterImpl]
+    with Distributions.Prov[BlockchainUpdaterImpl] {
   def areVersionsOfSameBlock(b1: Block, b2: Block): Boolean =
     b1.signerData.generator == b2.signerData.generator &&
       b1.consensusData.baseTarget == b2.consensusData.baseTarget &&
       b1.reference == b2.reference &&
       b1.timestamp == b2.timestamp
+
+  def addressTransactions(bu: BlockchainUpdaterImpl): AddressTransactions =
+    new CompositeAddressTransactions(bu.blockchain, Height @@ bu.height, () => bu.bestLiquidDiff)
+
+  def distributions(bu: BlockchainUpdaterImpl): Distributions =
+    new CompositeDistributions(bu, bu.blockchain, () => bu.bestLiquidDiff)
 }

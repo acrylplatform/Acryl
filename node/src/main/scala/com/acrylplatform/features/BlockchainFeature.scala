@@ -17,11 +17,13 @@ object BlockchainFeatures {
   val Ride4DApps                      = BlockchainFeature(11, "RIDE 4 DAPPS")
   val OrderV3                         = BlockchainFeature(12, "Order Version 3")
   val ReduceNFTFee                    = BlockchainFeature(13, "Reduce NFT fee")
+  val MinimumGeneratingBalanceOf100   = BlockchainFeature(14, "Minimum Generating Balance of 100 ACRYL")
+  val ChangeMinimalFees               = BlockchainFeature(15, "Change minimal tx fees")
 
   // When next fork-parameter is created, you must replace all uses of the DummyFeature with the new one.
   val DummyFeature = BlockchainFeature(-1, "Non Votable!")
 
-  private val dict = Seq(
+  private[this] val FeaturesMap = Seq(
     SmallerMinimalGeneratingBalance,
     NG,
     MassTransfer,
@@ -34,10 +36,12 @@ object BlockchainFeatures {
     SmartAssets,
     Ride4DApps,
     OrderV3,
-    ReduceNFTFee
+    ReduceNFTFee,
+    MinimumGeneratingBalanceOf100,
+    ChangeMinimalFees
   ).map(f => f.id -> f).toMap
 
-  val implemented: Set[Short] = dict.keySet
+  val implemented: Set[Short] = FeaturesMap.keySet
 
-  def feature(id: Short): Option[BlockchainFeature] = dict.get(id)
+  def feature(id: Short): Option[BlockchainFeature] = FeaturesMap.get(id)
 }

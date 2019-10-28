@@ -128,7 +128,8 @@ object DocExport {
                   .map(t =>
                     t.fields
                       .find(_._1 == name)
-                      .fold(TransactionField(true, List[TypeDoc]().asJava))(ft => TransactionField(false, List(typeRepr(ft._2)()).asJava)))
+                      .fold(TransactionField(absend = true, List[TypeDoc]().asJava))(ft =>
+                        TransactionField(absend = false, List(typeRepr(ft._2)()).asJava)))
                   .asJava
             ))
         val transactionDocs = transactionsTypes.map { t =>
@@ -136,11 +137,10 @@ object DocExport {
           TransactionDoc(
             t.name,
             transactionsFields
-              .map(
-                field =>
-                  fields
-                    .get(field.name)
-                    .fold(TransactionField(true, List[TypeDoc]().asJava))(ft => TransactionField(false, List(typeRepr(ft)()).asJava)))
+              .map(field =>
+                fields
+                  .get(field.name)
+                  .fold(TransactionField(absend = true, List[TypeDoc]().asJava))(ft => TransactionField(absend = false, List(typeRepr(ft)()).asJava)))
               .asJava
           )
         }

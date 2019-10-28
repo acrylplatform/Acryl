@@ -14,7 +14,7 @@ object Dependencies {
   private def bouncyCastle(module: String)                 = "org.bouncycastle"              % s"$module-jdk15on" % "1.59"
 
   private def catsModule(module: String, version: String = "1.6.0") = Def.setting("org.typelevel" %%% s"cats-$module"  % version)
-  private def monixModule(module: String)                           = Def.setting("io.monix"      %%% s"monix-$module" % "3.0.0-RC1")
+  private def monixModule(module: String)                           = Def.setting("io.monix"      %%% s"monix-$module" % "3.0.0-RC3")
 
   private val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
 
@@ -24,7 +24,7 @@ object Dependencies {
   private val kamonCore          = kamonModule("core", "1.1.5")
   private val machinist          = "org.typelevel" %% "machinist" % "0.6.6"
   private val logback            = "ch.qos.logback" % "logback-classic" % "1.2.3"
-  val janino             = "org.codehaus.janino" % "janino" % "3.0.12"
+  val janino                     = "org.codehaus.janino" % "janino" % "3.0.12"
 
   private val catsEffect = catsModule("effect", "1.2.0")
   private val catsCore   = catsModule("core")
@@ -95,7 +95,7 @@ object Dependencies {
       machinist.exclude("org.scala-js", "scalajs-library_2.12"),
       catsEffect.value.exclude("org.typelevel", "cats-core_sjs0.6_2.12"),
       ("org.typelevel" %% "cats-mtl-core" % "0.4.0").exclude("org.scalacheck", "scalacheck_2.12"),
-      "ch.obermuhlner" % "big-math" % "2.1.0",
+      "ch.obermuhlner"       % "big-math" % "2.1.0",
       "org.scorexfoundation" %% "scrypto" % "2.0.4",
       ("org.bykn" %% "fastparse-cats-core" % "0.1.0")
         .exclude("org.scalatest", "scalatest_2.12")

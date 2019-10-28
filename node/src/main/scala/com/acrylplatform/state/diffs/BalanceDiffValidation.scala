@@ -4,6 +4,7 @@ import cats.implicits._
 import com.acrylplatform.account.Address
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.settings.FunctionalitySettings
+import com.acrylplatform.state.extensions.Distributions
 import com.acrylplatform.state.{Blockchain, Diff, Portfolio}
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.TxValidationError.AccountBalanceError
@@ -48,7 +49,7 @@ object BalanceDiffValidation extends ScorexLogging {
           val newB = oldB + c
           newB < 0
       } map { _ =>
-        acc -> s"negative asset balance: $acc, new portfolio: ${negativeAssetsInfo(b.portfolio(acc).combine(portfolioDiff))}"
+        acc -> s"negative asset balance: $acc, new portfolio: ${negativeAssetsInfo(Distributions(b).portfolio(acc).combine(portfolioDiff))}"
       })
     }
 

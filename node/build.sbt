@@ -6,7 +6,6 @@ import sbtassembly.MergeStrategy
 
 enablePlugins(RunApplicationSettings, JavaServerAppPackaging, UniversalDeployPlugin, JDebPackaging, SystemdPlugin, GitVersioning)
 
-
 resolvers ++= Seq(
   Resolver.bintrayRepo("ethereum", "maven"),
   Resolver.bintrayRepo("dnvriend", "maven"),
@@ -144,7 +143,7 @@ executableScriptName := moduleName.value // bin/acryl instead of bin/node
 
 // Variable options are used in different tasks and configs, so we will specify all of them
 val nameFix = Seq(
-  name := "acryl",
+  name := "acryl-node",
   packageName := s"${name.value}${network.value.packageSuffix}",
   normalizedName := s"${name.value}${network.value.packageSuffix}"
 )

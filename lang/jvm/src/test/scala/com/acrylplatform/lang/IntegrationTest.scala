@@ -331,13 +331,13 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
       PureContext.build(Global, V1).evaluationContext,
       EvaluationContext(
         typeDefs = Map.empty,
-        letDefs = Map("x"                -> LazyVal(EitherT.pure(CONST_LONG(3l)))),
+        letDefs = Map("x"                -> LazyVal(EitherT.pure(CONST_LONG(3L)))),
         functions = Map(doubleFst.header -> doubleFst)
       )
     )
 
-    val expr = FUNCTION_CALL(PureContext.sumLong.header, List(FUNCTION_CALL(doubleFst.header, List(CONST_LONG(1000l))), REF("x")))
-    ev[CONST_LONG](context, expr) shouldBe evaluated(2003l)
+    val expr = FUNCTION_CALL(PureContext.sumLong.header, List(FUNCTION_CALL(doubleFst.header, List(CONST_LONG(1000L))), REF("x")))
+    ev[CONST_LONG](context, expr) shouldBe evaluated(2003L)
   }
 
   property("context won't change after execution of an inner block") {
@@ -345,7 +345,7 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
       PureContext.build(Global, V1).evaluationContext,
       EvaluationContext(
         typeDefs = Map.empty,
-        letDefs = Map("x" -> LazyVal(EitherT.pure(CONST_LONG(3l)))),
+        letDefs = Map("x" -> LazyVal(EitherT.pure(CONST_LONG(3L)))),
         functions = Map.empty
       )
     )
@@ -354,7 +354,7 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
       function = PureContext.sumLong.header,
       args = List(
         BLOCK(
-          dec = LET("x", CONST_LONG(5l)),
+          dec = LET("x", CONST_LONG(5L)),
           body = REF("x")
         ),
         REF("x")
@@ -514,9 +514,10 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
     for (i <- 65528 to 65535) array(i) = 1
     val src =
       s""" arr.toInt(65528) """
-    eval[EVALUATED](src, ctxt = CTX(Seq(),
-      Map("arr" -> ((BYTESTR -> "max sized ByteVector") -> LazyVal(EitherT.fromEither(CONST_BYTESTR(array))))), Array())
-    ) shouldBe Right(CONST_LONG(0x0101010101010101L))
+    eval[EVALUATED](src,
+                    ctxt = CTX(Seq(),
+                               Map("arr" -> ((BYTESTR -> "max sized ByteVector") -> LazyVal(EitherT.fromEither(CONST_BYTESTR(array))))),
+                               Array())) shouldBe Right(CONST_LONG(0x0101010101010101L))
   }
 
   property("toInt by offset (partial)") {
@@ -601,9 +602,10 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
     val str = "a" * 32766 + "z"
     val src =
       """ str.indexOf("z", 32766) """
-    eval[EVALUATED](src, ctxt = CTX(Seq(),
-      Map("str" -> ((STRING -> "max sized String") -> LazyVal(EitherT.pure(CONST_STRING(str).explicitGet())))), Array())
-    ) shouldBe Right(CONST_LONG(32766L))
+    eval[EVALUATED](src,
+                    ctxt = CTX(Seq(),
+                               Map("str" -> ((STRING -> "max sized String") -> LazyVal(EitherT.pure(CONST_STRING(str).explicitGet())))),
+                               Array())) shouldBe Right(CONST_LONG(32766L))
   }
 
   property("indexOf (not present)") {
@@ -676,9 +678,8 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
     val str = "a" * 32766 + "z"
     val src =
       """ str.lastIndexOf("z", 32766) """
-    eval(src, ctxt = CTX(Seq(),
-      Map("str" -> ((STRING -> "max sized String") -> LazyVal(EitherT.fromEither(CONST_STRING(str))))), Array())
-    ) shouldBe Right(CONST_LONG(32766L))
+    eval(src, ctxt = CTX(Seq(), Map("str" -> ((STRING -> "max sized String") -> LazyVal(EitherT.fromEither(CONST_STRING(str))))), Array())) shouldBe Right(
+      CONST_LONG(32766L))
   }
 
   property("lastIndexOf (not present)") {
@@ -739,42 +740,50 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
   property("split") {
     val src =
       """ "q:we:.;q;we:x;q.we".split(":.;") """
-    eval[EVALUATED](src) shouldBe Right(ARR(IndexedSeq(
-      CONST_STRING("q:we").explicitGet(),
-      CONST_STRING("q;we:x;q.we").explicitGet()
-    )))
+    eval[EVALUATED](src) shouldBe Right(
+      ARR(
+        IndexedSeq(
+          CONST_STRING("q:we").explicitGet(),
+          CONST_STRING("q;we:x;q.we").explicitGet()
+        )))
   }
 
   property("split separate correctly") {
     val src =
       """ "str1;str2;str3;str4".split(";") """
-    eval[EVALUATED](src) shouldBe Right(ARR(IndexedSeq(
-      CONST_STRING("str1").explicitGet(),
-      CONST_STRING("str2").explicitGet(),
-      CONST_STRING("str3").explicitGet(),
-      CONST_STRING("str4").explicitGet()
-    )))
+    eval[EVALUATED](src) shouldBe Right(
+      ARR(
+        IndexedSeq(
+          CONST_STRING("str1").explicitGet(),
+          CONST_STRING("str2").explicitGet(),
+          CONST_STRING("str3").explicitGet(),
+          CONST_STRING("str4").explicitGet()
+        )))
   }
 
   property("split separator at the end") {
     val src =
       """ "str1;str2;".split(";") """
-    eval[EVALUATED](src) shouldBe Right(ARR(IndexedSeq(
-      CONST_STRING("str1").explicitGet(),
-      CONST_STRING("str2").explicitGet(),
-      CONST_STRING("").explicitGet()
-    )))
+    eval[EVALUATED](src) shouldBe Right(
+      ARR(
+        IndexedSeq(
+          CONST_STRING("str1").explicitGet(),
+          CONST_STRING("str2").explicitGet(),
+          CONST_STRING("").explicitGet()
+        )))
   }
 
   property("split double separator") {
     val src =
       """ "str1;;str2;str3".split(";") """
-    eval[EVALUATED](src) shouldBe Right(ARR(IndexedSeq(
-      CONST_STRING("str1").explicitGet(),
-      CONST_STRING("").explicitGet(),
-      CONST_STRING("str2").explicitGet(),
-      CONST_STRING("str3").explicitGet()
-    )))
+    eval[EVALUATED](src) shouldBe Right(
+      ARR(
+        IndexedSeq(
+          CONST_STRING("str1").explicitGet(),
+          CONST_STRING("").explicitGet(),
+          CONST_STRING("str2").explicitGet(),
+          CONST_STRING("str3").explicitGet()
+        )))
   }
 
   property("parseInt") {
@@ -991,6 +1000,6 @@ class IntegrationTest extends PropSpec with PropertyChecks with ScriptGen with M
        """.stripMargin
 
     eval(script(error = false)) shouldBe Right(CONST_LONG(1))
-    eval(script(error = true))  shouldBe Left(message)
+    eval(script(error = true)) shouldBe Left(message)
   }
 }

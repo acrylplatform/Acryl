@@ -1,6 +1,7 @@
 package com.acrylplatform
 
 import java.io.File
+import java.net.InetSocketAddress
 import java.security.Security
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,7 +24,7 @@ import com.acrylplatform.db.openDB
 import com.acrylplatform.extensions.{Context, Extension}
 import com.acrylplatform.features.api.ActivationApiRoute
 import com.acrylplatform.history.StorageFactory
-import com.acrylplatform.http.{DebugApiRoute, NodeApiRoute, AcrylApiRoute}
+import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute}
 import com.acrylplatform.metrics.Metrics
 import com.acrylplatform.mining.{Miner, MinerImpl}
 import com.acrylplatform.network.RxExtensionLoader.RxExtensionLoaderShutdownHook
@@ -142,9 +143,43 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         allChannels.broadcast(LocalScoreChanged(x))
       }(scheduler)
 
+    val networkSettingsCopy =
+      if (settings.networkSettings.uPnPSettings.enable)
+        settings.networkSettings.copy(
+          declaredAddress = settings.networkSettings.declaredAddress match {
+            case Some(address) =>
+              for (addr <- settings.networkSettings.declaredAddress)
+                upnp.addPort(addr.getPort) match {
+                  case Left(address) => log.debug("Mapped port [" + address + "]:" + addr.getPort)
+                  case Right(string) => log.error(string)
+                }
+              Option(address)
+            case None =>
+              upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
+                case Left(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
+                case Right(string) =>
+                  log.error(string)
+                  None
+              }
+          }
+        )
+      else
+        settings.networkSettings.copy()
+
+    val settingsForNetworkServer = settings.copy(
+      networkSettings = networkSettingsCopy
+    )
+
     val historyReplier = new HistoryReplier(blockchainUpdater, settings.synchronizationSettings, historyRepliesScheduler)
     val network =
-      NetworkServer(settings, lastBlockInfo, blockchainUpdater, historyReplier, utxStorage, peerDatabase, allChannels, establishedConnections)
+      NetworkServer(settingsForNetworkServer,
+                    lastBlockInfo,
+                    blockchainUpdater,
+                    historyReplier,
+                    utxStorage,
+                    peerDatabase,
+                    allChannels,
+                    establishedConnections)
     maybeNetwork = Some(network)
     val (signatures, blocks, blockchainScores, microblockInvs, microblockResponses, transactions) = network.messages
 
@@ -189,18 +224,14 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
                               blockchainUpdater.lastBlockInfo)
 
     val microBlockSink = microblockData
-      .mapTask(scala.Function.tupled(processMicroBlock))
+      .mapEval(scala.Function.tupled(processMicroBlock))
 
     val blockSink = newBlocks
-      .mapTask(scala.Function.tupled(processBlock))
+      .mapEval(scala.Function.tupled(processBlock))
 
-    Observable.merge(microBlockSink, blockSink).subscribe()
+    Observable(microBlockSink, blockSink).merge.subscribe()
 
     miner.scheduleMining()
-
-    for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-      upnp.addPort(addr.getPort)
-    }
 
     implicit val as: ActorSystem                 = actorSystem
     implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -313,7 +344,16 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       log.info("Closing REST API")
       if (settings.restAPISettings.enable)
         Try(Await.ready(serverBinding.unbind(), 2.minutes)).failed.map(e => log.error("Failed to unbind REST API port", e))
-      for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) upnp.deletePort(addr.getPort)
+
+      settings.networkSettings.declaredAddress match {
+        case Some(_) =>
+          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
+            upnp.deletePort(addr.getPort)
+          }
+        case None =>
+          if (settings.networkSettings.uPnPSettings.enable)
+            upnp.deletePort(settings.networkSettings.bindAddress.getPort)
+      }
 
       log.debug("Closing peer database")
       peerDatabase.close()

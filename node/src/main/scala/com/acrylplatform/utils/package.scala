@@ -51,6 +51,7 @@ package object utils extends ScorexLogging {
       else
         (1024, Vector("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"))
 
+    @tailrec
     def getExponent(curBytes: Long, baseValue: Int, curExponent: Int = 0): Int =
       if (curBytes < baseValue) curExponent
       else {

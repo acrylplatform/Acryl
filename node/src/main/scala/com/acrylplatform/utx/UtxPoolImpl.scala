@@ -23,7 +23,7 @@ import com.acrylplatform.transaction.smart.script.trace.TracedResult
 import com.acrylplatform.transaction.transfer._
 import com.acrylplatform.utils.{ScorexLogging, Time}
 import kamon.Kamon
-import kamon.metric.MeasurementUnit
+import kamon.metric.{CounterMetric, MeasurementUnit, TimerMetric}
 import monix.execution.Scheduler
 import monix.execution.schedulers.SchedulerService
 import monix.reactive.Observer
@@ -266,17 +266,17 @@ class UtxPoolImpl(time: Time,
   }
 
   private[this] object PoolMetrics {
-    private[this] val sizeStats  = Kamon.rangeSampler("utx.pool-size", MeasurementUnit.none, Duration.of(500, ChronoUnit.MILLIS))
-    private[this] val bytesStats = Kamon.rangeSampler("utx.pool-bytes", MeasurementUnit.information.bytes, Duration.of(500, ChronoUnit.MILLIS))
-    val putTimeStats             = Kamon.timer("utx.put-if-new")
-    val putRequestStats          = Kamon.counter("utx.put-if-new.requests")
-    val packTimeStats            = Kamon.timer("utx.pack-unconfirmed")
+    private[this] val sizeStats        = Kamon.rangeSampler("utx.pool-size", MeasurementUnit.none, Duration.of(500, ChronoUnit.MILLIS))
+    private[this] val bytesStats       = Kamon.rangeSampler("utx.pool-bytes", MeasurementUnit.information.bytes, Duration.of(500, ChronoUnit.MILLIS))
+    val putTimeStats: TimerMetric      = Kamon.timer("utx.put-if-new")
+    val putRequestStats: CounterMetric = Kamon.counter("utx.put-if-new.requests")
+    val packTimeStats: TimerMetric     = Kamon.timer("utx.pack-unconfirmed")
 
-    val checkIsMostProfitable = Kamon.timer("utx.check.is-most-profitable")
-    val checkAlias            = Kamon.timer("utx.check.alias")
-    val checkCanReissue       = Kamon.timer("utx.check.can-reissue")
-    val checkNotBlacklisted   = Kamon.timer("utx.check.not-blacklisted")
-    val checkScripted         = Kamon.timer("utx.check.scripted")
+    val checkIsMostProfitable: TimerMetric = Kamon.timer("utx.check.is-most-profitable")
+    val checkAlias: TimerMetric            = Kamon.timer("utx.check.alias")
+    val checkCanReissue: TimerMetric       = Kamon.timer("utx.check.can-reissue")
+    val checkNotBlacklisted: TimerMetric   = Kamon.timer("utx.check.not-blacklisted")
+    val checkScripted: TimerMetric         = Kamon.timer("utx.check.scripted")
 
     def addTransaction(tx: Transaction): Unit = {
       sizeStats.increment()

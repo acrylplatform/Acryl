@@ -32,7 +32,7 @@ import play.api.libs.json.Json
 import shapeless.Coproduct
 
 class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers with TransactionGen with NoShrink {
-  val T = 'T'.toByte
+  val K: Byte = 'K'.toByte
 
   def letProof(p: Proofs, prefix: String)(i: Int) =
     s"let ${prefix.replace(".", "")}proof$i = $prefix.proofs[$i] == base58'${p.proofs.applyOrElse(i, (_: Int) => ByteStr.empty).base58}'"
@@ -86,7 +86,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
            | }
            |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -114,7 +114,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
       val result = runScript(
         s,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -134,7 +134,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -155,7 +155,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -174,7 +174,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -197,7 +197,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -216,7 +216,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -237,7 +237,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
           | }
           |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -258,7 +258,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
            | }
            |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -268,15 +268,15 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
     forAll(invokeScriptGen) { t =>
       val checkArgsScript = if (t.funcCallOpt.get.args.nonEmpty) {
         t.funcCallOpt.get.args
-      .collect {
-        case CONST_LONG(i)    => i.toString
-        case CONST_STRING(s)  => s""""$s""""
-        case CONST_BOOLEAN(b) => b.toString
-        case CONST_BYTESTR(b) => s"base64'${b.base64}'"
-      }
-      .zipWithIndex
-      .map { case (str, i) => s"t.args[$i] == $str" }
-      .mkString("let checkArgs = ", " && ", "\n")
+          .collect {
+            case CONST_LONG(i)    => i.toString
+            case CONST_STRING(s)  => s""""$s""""
+            case CONST_BOOLEAN(b) => b.toString
+            case CONST_BYTESTR(b) => s"base64'${b.base64}'"
+          }
+          .zipWithIndex
+          .map { case (str, i) => s"t.args[$i] == $str" }
+          .mkString("let checkArgs = ", " && ", "\n")
       } else {
         "let checkArgs = true"
       }
@@ -314,7 +314,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
             | case other => throw()
             | }
             |""".stripMargin
-      val result = runScriptWithCustomContext(script, Coproduct(t), T, V3)
+      val result = runScriptWithCustomContext(script, Coproduct(t), K, V3)
       result shouldBe evaluated(true)
     }
   }
@@ -335,7 +335,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
            | }
            |""".stripMargin,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -372,7 +372,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
       val result = runScript(
         s,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -416,7 +416,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
       val result = runScript(
         script,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -488,7 +488,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
       val result = runScript(
         s,
         Coproduct(t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -528,7 +528,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
       val result = runScript(
         s,
         Coproduct[In](t),
-        T
+        K
       )
       result shouldBe evaluated(true)
     }
@@ -546,7 +546,7 @@ class TransactionBindingsTest extends PropSpec with PropertyChecks with Matchers
            |}
        """.stripMargin
 
-      runScript(src, Coproduct[In](ord), T) shouldBe an[Left[_, _]]
+      runScript(src, Coproduct[In](ord), K) shouldBe an[Left[_, _]]
       runWithSmartTradingActivated(src, Coproduct[In](ord), 'T') shouldBe evaluated(true)
     }
   }

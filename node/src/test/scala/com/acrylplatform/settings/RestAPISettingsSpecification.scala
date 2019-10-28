@@ -19,6 +19,7 @@ class RestAPISettingsSpecification extends FlatSpec with Matchers {
                                                |    transactions-by-address-limit = 10000
                                                |    distribution-address-limit = 10000
                                                |    allow-tx-rebroadcasting = true
+                                               |    max-blocks-per-request = 100
                                                |  }
                                                |}
       """.stripMargin)
@@ -33,5 +34,6 @@ class RestAPISettingsSpecification extends FlatSpec with Matchers {
     settings.transactionsByAddressLimit shouldBe 10000
     settings.distributionAddressLimit shouldBe 10000
     settings.allowTxRebroadcasting shouldBe true
+    settings.maxBlocksPerRequest shouldBe 100
   }
 }

@@ -8,7 +8,7 @@ case class NxtConsensusBlockField(override val value: NxtLikeConsensusBlockData)
 
   override val name: String = "nxt-consensus"
 
-  override def b =
+  override def b: Array[Byte] =
     Bytes.ensureCapacity(Longs.toByteArray(value.baseTarget), 8, 0) ++
       value.generationSignature.arr
 

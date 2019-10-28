@@ -2,7 +2,7 @@ package com.acrylplatform.http
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import com.acrylplatform.account.{Address, PublicKey}
+import com.acrylplatform.account.PublicKey
 import com.acrylplatform.api.http.ApiError.{InvalidAddress, InvalidSignature, TooBigArrayAllocation}
 import com.acrylplatform.api.http.TransactionsApiRoute
 import com.acrylplatform.common.state.ByteStr
@@ -15,8 +15,6 @@ import com.acrylplatform.lang.v1.compiler.Terms.TRUE
 import com.acrylplatform.settings.{BlockchainSettings, GenesisSettings, TestFunctionalitySettings, WalletSettings}
 import com.acrylplatform.state.{AssetDescription, Blockchain}
 import com.acrylplatform.transaction.Asset.IssuedAsset
-import com.acrylplatform.transaction.TransactionParser
-import com.acrylplatform.utils.CloseableIterator
 import com.acrylplatform.utx.UtxPool
 import com.acrylplatform.wallet.Wallet
 import com.acrylplatform.{BlockGen, NoShrink, TestTime, TransactionGen}
@@ -39,7 +37,7 @@ class TransactionsRouteSpec
     with PropertyChecks
     with NoShrink {
 
-  implicit def scheduler = Scheduler.global
+  implicit def scheduler: Scheduler = Scheduler.global
 
   private val wallet      = Wallet(WalletSettings(None, Some("qwerty"), None))
   private val blockchain  = mock[Blockchain]
@@ -67,7 +65,7 @@ class TransactionsRouteSpec
         val blockchain = mock[Blockchain]
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
-        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures)
+        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
         (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
@@ -103,7 +101,7 @@ class TransactionsRouteSpec
         val blockchain = mock[Blockchain]
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
-        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures)
+        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
         (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
@@ -118,7 +116,7 @@ class TransactionsRouteSpec
 
     "transfer with Asset fee" - {
       "without sponsorship" in {
-        val assetId: ByteStr         = issueGen.sample.get.assetId()
+        val assetId: ByteStr  = issueGen.sample.get.assetId
         val sender: PublicKey = accountGen.sample.get
         val transferTx = Json.obj(
           "type"            -> 4,
@@ -135,7 +133,7 @@ class TransactionsRouteSpec
         val blockchain = mock[Blockchain]
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
-        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures)
+        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
         (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
@@ -148,8 +146,8 @@ class TransactionsRouteSpec
       }
 
       "with sponsorship" in {
-        val assetId: IssuedAsset     = IssuedAsset(issueGen.sample.get.assetId())
-        val sender: PublicKey = accountGen.sample.get
+        val assetId: IssuedAsset = IssuedAsset(issueGen.sample.get.assetId)
+        val sender: PublicKey    = accountGen.sample.get
         val transferTx = Json.obj(
           "type"            -> 4,
           "version"         -> 2,
@@ -163,9 +161,9 @@ class TransactionsRouteSpec
           preActivatedFeatures = TestFunctionalitySettings.Enabled.preActivatedFeatures + (BlockchainFeatures.FeeSponsorship.id -> 0)
         )
         val blockchain = mock[Blockchain]
-        (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).once()
+        (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).once()
-        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures)
+        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
         (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
         (blockchain.assetDescription _)
           .expects(assetId)
@@ -191,8 +189,8 @@ class TransactionsRouteSpec
       }
 
       "with sponsorship, smart token and smart account" in {
-        val assetId: IssuedAsset     = IssuedAsset(issueGen.sample.get.assetId())
-        val sender: PublicKey = accountGen.sample.get
+        val assetId: IssuedAsset = IssuedAsset(issueGen.sample.get.assetId)
+        val sender: PublicKey    = accountGen.sample.get
         val transferTx = Json.obj(
           "type"            -> 4,
           "version"         -> 2,
@@ -207,9 +205,9 @@ class TransactionsRouteSpec
         )
 
         val blockchain = mock[Blockchain]
-        (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).once()
+        (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(true).once()
-        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures)
+        (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
         (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
         (blockchain.assetDescription _)
           .expects(assetId)
@@ -271,7 +269,6 @@ class TransactionsRouteSpec
       def routeGen: Gen[Route] =
         Gen.const({
           val b = mock[Blockchain]
-          (b.addressTransactions(_: Address, _: Set[TransactionParser], _: Option[ByteStr])).expects(*, *, *).returning(CloseableIterator.empty).anyNumberOfTimes()
           TransactionsApiRoute(restAPISettings, wallet, b, utx, allChannels, new TestTime).route
         })
 
@@ -335,7 +332,7 @@ class TransactionsRouteSpec
           val resp = responseAs[Seq[JsValue]]
           for ((r, t) <- resp.zip(txs)) {
             if ((r \ "version").as[Int] == 1) {
-              (r \ "signature").as[String] shouldEqual t.proofs.proofs(0).base58
+              (r \ "signature").as[String] shouldEqual t.proofs.proofs.head.base58
             } else {
               (r \ "proofs").as[Seq[String]] shouldEqual t.proofs.proofs.map(_.base58)
             }

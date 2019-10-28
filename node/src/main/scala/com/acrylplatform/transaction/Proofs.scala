@@ -19,10 +19,10 @@ case class Proofs(proofs: List[ByteStr]) {
 }
 
 object Proofs {
-  val Version            = 1: Byte
-  val MaxProofs          = 8
-  val MaxProofSize       = 64
-  val MaxProofStringSize = base58Length(MaxProofSize)
+  val Version: Byte           = 1: Byte
+  val MaxProofs               = 8
+  val MaxProofSize            = 64
+  val MaxProofStringSize: Int = base58Length(MaxProofSize)
 
   lazy val empty = new Proofs(Nil)
 

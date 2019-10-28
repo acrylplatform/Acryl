@@ -32,8 +32,12 @@ trait BaseState {
     LevelDBFactory.factory.open(new File(dir), options)
   }
 
-  private val portfolioChanges = Observer.empty(UncaughtExceptionReporter.LogExceptionsToStandardErr)
-  val state: LevelDBWriter     = new LevelDBWriter(db, portfolioChanges, fsSettings, DBSettings("", false, false, 100000, 2000, (120 * 60 * 1000).millis))
+  private val portfolioChanges = Observer.empty(UncaughtExceptionReporter.default)
+  val state: LevelDBWriter = new LevelDBWriter(
+    db,
+    portfolioChanges,
+    fsSettings,
+    DBSettings("", storeTransactionsByAddress = false, storeInvokeScriptResults = false, 100000, 2000, (120 * 60 * 1000).millis))
 
   private var _richAccount: KeyPair = _
   def richAccount: KeyPair          = _richAccount

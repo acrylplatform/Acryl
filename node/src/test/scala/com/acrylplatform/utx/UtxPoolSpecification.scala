@@ -1,6 +1,6 @@
 package com.acrylplatform.utx
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import cats.data.NonEmptyList
 import com.typesafe.config.ConfigFactory
@@ -24,6 +24,7 @@ import com.acrylplatform.mining._
 import com.acrylplatform.settings._
 import com.acrylplatform.state._
 import com.acrylplatform.state.diffs._
+import com.acrylplatform.state.extensions.Distributions
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.TxValidationError.SenderIsBlacklisted
 import com.acrylplatform.transaction.smart.SetScriptTransaction
@@ -33,6 +34,7 @@ import com.acrylplatform.transaction.{Asset, Transaction, _}
 import com.acrylplatform.utils.Implicits.SubjectOps
 import com.acrylplatform.utils.Time
 import monix.reactive.subjects.Subject
+import org.iq80.leveldb.DB
 import org.scalacheck.Gen
 import org.scalacheck.Gen._
 import org.scalamock.scalatest.MockFactory
@@ -45,9 +47,9 @@ private object UtxPoolSpecification {
   private val ignoreSpendableBalanceChanged = Subject.empty[(Address, Asset)]
 
   final case class TempDB(fs: FunctionalitySettings, dbSettings: DBSettings) {
-    val path   = Files.createTempDirectory("leveldb-test")
-    val db     = openDB(path.toAbsolutePath.toString)
-    val writer = new LevelDBWriter(db, ignoreSpendableBalanceChanged, fs, dbSettings)
+    val path: Path = Files.createTempDirectory("leveldb-test")
+    val db: DB     = openDB(path.toAbsolutePath.toString)
+    val writer     = new LevelDBWriter(db, ignoreSpendableBalanceChanged, fs, dbSettings)
 
     sys.addShutdownHook {
       db.close()
@@ -65,9 +67,9 @@ class UtxPoolSpecification
     with NoShrink
     with BlocksTransactionsHelpers
     with WithDomain {
-  val PoolDefaultMaxBytes = 50 * 1024 * 1024 // 50 MB
+  val PoolDefaultMaxBytes: Int = 50 * 1024 * 1024 // 50 MB
 
-  import CommonValidation.{ScriptExtraFee => extraFee}
+  import FeeValidation.{ScriptExtraFee => extraFee}
   import FunctionalitySettings.TESTNET.{maxTransactionTimeBackOffset => maxAge}
   import UtxPoolSpecification._
 
@@ -113,7 +115,7 @@ class UtxPoolSpecification
   private def massTransferWithRecipients(sender: KeyPair, recipients: List[PublicKey], maxAmount: Long, time: Time) = {
     val amount    = maxAmount / (recipients.size + 1)
     val transfers = recipients.map(r => ParsedTransfer(r.toAddress, amount))
-    val minFee    = CommonValidation.FeeConstants(TransferTransaction.typeId) + CommonValidation.FeeConstants(MassTransferTransaction.typeId) * transfers.size
+    val minFee    = FeeValidation.OldFeeUnits(TransferTransaction.typeId) + FeeValidation.OldFeeUnits(MassTransferTransaction.typeId) * transfers.size
     val txs = for { fee <- chooseNum(minFee, amount) } yield
       MassTransferTransaction.selfSigned(Acryl, sender, transfers, time.getTimestamp(), fee, Array.empty[Byte]).explicitGet()
     txs.label("transferWithRecipient")
@@ -184,7 +186,7 @@ class UtxPoolSpecification
 
   private val withValidPaymentsNotAdded = (for {
     (sender, senderBalance, bcu) <- stateGen
-    recipient <- accountGen
+    recipient                    <- accountGen
     time = new TestTime()
     txs <- Gen.nonEmptyListOf(transferWithRecipient(sender, recipient, senderBalance / 10, time))
   } yield {
@@ -214,12 +216,12 @@ class UtxPoolSpecification
   } yield {
     val settings =
       UtxSettings(txs.length,
-        PoolDefaultMaxBytes,
-        1000,
-        Set(sender.address),
-        Set(recipient.address),
-        allowTransactionsFromSmartAccounts = true,
-        allowSkipChecks = false)
+                  PoolDefaultMaxBytes,
+                  1000,
+                  Set(sender.address),
+                  Set(recipient.address),
+                  allowTransactionsFromSmartAccounts = true,
+                  allowSkipChecks = false)
     val utxPool = new UtxPoolImpl(time, bcu, ignoreSpendableBalanceChanged, settings)
     (sender, utxPool, txs)
   }).label("withBlacklistedAndAllowedByRule")
@@ -235,12 +237,12 @@ class UtxPoolSpecification
       val whitelist: Set[String] = if (allowRecipients) recipients.map(_.address).toSet else Set.empty
       val settings =
         UtxSettings(txs.length,
-          PoolDefaultMaxBytes,
-          1000,
-          Set(sender.address),
-          whitelist,
-          allowTransactionsFromSmartAccounts = true,
-          allowSkipChecks = false)
+                    PoolDefaultMaxBytes,
+                    1000,
+                    Set(sender.address),
+                    whitelist,
+                    allowTransactionsFromSmartAccounts = true,
+                    allowSkipChecks = false)
       val utxPool = new UtxPoolImpl(time, bcu, ignoreSpendableBalanceChanged, settings)
       (sender, utxPool, txs)
     }).label("massTransferWithBlacklisted")
@@ -286,8 +288,7 @@ class UtxPoolSpecification
 
   private def preconditionsGen(lastBlockId: ByteStr, master: KeyPair): Gen[Seq[Block]] =
     for {
-      version <- Gen.oneOf(SetScriptTransaction.supportedVersions.toSeq)
-      ts      <- timestampGen
+      ts <- timestampGen
     } yield {
       val setScript = SetScriptTransaction.selfSigned(master, Some(script), 100000, ts + 1).explicitGet()
       Seq(TestBlock.create(ts + 1, lastBlockId, Seq(setScript)))
@@ -358,7 +359,7 @@ class UtxPoolSpecification
       utxSettings =
         UtxSettings(20, PoolDefaultMaxBytes, 1000, Set.empty, Set.empty, allowTransactionsFromSmartAccounts = true, allowSkipChecks = false)) {
       (txs, utx, _) =>
-        utx.putIfNew(txs.head).resultE should matchPattern { case Right(true) => }
+        utx.putIfNew(txs.head).resultE should matchPattern { case Right(true)  => }
         utx.putIfNew(txs.head).resultE should matchPattern { case Right(false) => }
     }
 
@@ -502,7 +503,7 @@ class UtxPoolSpecification
 
       "takes into account unconfirmed transactions" in forAll(withValidPayments) {
         case (sender, state, utxPool, _, _) =>
-          val basePortfolio = state.portfolio(sender)
+          val basePortfolio = Distributions(state).portfolio(sender)
           val baseAssetIds  = basePortfolio.assetIds
 
           val pessimisticAssetIds = {
@@ -600,12 +601,13 @@ class UtxPoolSpecification
                 timeSourceIsRunning = true
                 0L
               }
-            val settings = UtxSettings(10, PoolDefaultMaxBytes, 1000, Set.empty, Set.empty, allowTransactionsFromSmartAccounts = true, allowSkipChecks = false)
+            val settings =
+              UtxSettings(10, PoolDefaultMaxBytes, 1000, Set.empty, Set.empty, allowTransactionsFromSmartAccounts = true, allowSkipChecks = false)
             val utxPool = new UtxPoolImpl(time, bcu, ignoreSpendableBalanceChanged, settings, () => nanoTimeSource())
 
-          utxPool.putIfNew(transfer).resultE.explicitGet()
-          val (tx, _) = utxPool.packUnconfirmed(MultiDimensionalMiningConstraint.unlimited, 100.nanos)
-          tx should contain (transfer)
+            utxPool.putIfNew(transfer).resultE.explicitGet()
+            val (tx, _) = utxPool.packUnconfirmed(MultiDimensionalMiningConstraint.unlimited, 100.nanos)
+            tx should contain(transfer)
         }
       }
     }

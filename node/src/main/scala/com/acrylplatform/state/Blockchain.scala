@@ -7,13 +7,12 @@ import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.lang.ValidationError
 import com.acrylplatform.lang.script.Script
 import com.acrylplatform.settings.BlockchainSettings
+import com.acrylplatform.state.extensions.{AddressTransactions, BlockchainExtensions, Distributions}
 import com.acrylplatform.state.reader.LeaseDetails
 import com.acrylplatform.transaction.Asset.{IssuedAsset, Acryl}
-import com.acrylplatform.transaction.assets.IssueTransaction
 import com.acrylplatform.transaction.lease.LeaseTransaction
 import com.acrylplatform.transaction.transfer.TransferTransaction
-import com.acrylplatform.transaction.{Asset, Transaction, TransactionParser, TransactionParsers}
-import com.acrylplatform.utils.CloseableIterator
+import com.acrylplatform.transaction.{Asset, Transaction}
 
 trait Blockchain {
   def settings: BlockchainSettings
@@ -46,32 +45,9 @@ trait Blockchain {
   def activatedFeatures: Map[Short, Int]
   def featureVotes(height: Int): Map[Short, Int]
 
-  def portfolio(a: Address): Portfolio
-
   def transferById(id: ByteStr): Option[(Int, TransferTransaction)]
   def transactionInfo(id: ByteStr): Option[(Int, Transaction)]
   def transactionHeight(id: ByteStr): Option[Int]
-
-  def nftList(address: Address, from: Option[IssuedAsset]): CloseableIterator[IssueTransaction]
-
-  def addressTransactions(address: Address, types: Set[TransactionParser], fromId: Option[ByteStr]): CloseableIterator[(Height, Transaction)]
-
-  // Compatibility
-  def addressTransactions(address: Address,
-                          types: Set[Transaction.Type],
-                          count: Int,
-                          fromId: Option[ByteStr]): Either[String, Seq[(Height, Transaction)]] = {
-    def createTransactionsList(): Seq[(Height, Transaction)] = concurrent.blocking {
-      addressTransactions(address, TransactionParsers.forTypeSet(types), fromId)
-        .take(count)
-        .closeAfter(_.toVector)
-    }
-
-    fromId match {
-      case Some(id) => transactionInfo(id).toRight(s"Transaction $id does not exist").map(_ => createTransactionsList())
-      case None     => Right(createTransactionsList())
-    }
-  }
 
   def containsTransaction(tx: Transaction): Boolean
 
@@ -100,15 +76,9 @@ trait Blockchain {
 
   def balance(address: Address, mayBeAssetId: Asset = Acryl): Long
 
-  def assetDistribution(asset: IssuedAsset): AssetDistribution
-  def assetDistributionAtHeight(asset: IssuedAsset,
-                                height: Int,
-                                count: Int,
-                                fromAddress: Option[Address]): Either[ValidationError, AssetDistributionPage]
-  def acrylDistribution(height: Int): Either[ValidationError, Map[Address, Long]]
-
   // the following methods are used exclusively by patches
-  def allActiveLeases: CloseableIterator[LeaseTransaction]
+  def collectActiveLeases[T](pf: PartialFunction[LeaseTransaction, T]): Seq[T]
+  final def allActiveLeases: Seq[LeaseTransaction] = collectActiveLeases { case lt => lt }
 
   /** Builds a new portfolio map by applying a partial function to all portfolios on which the function is defined.
     *
@@ -116,4 +86,10 @@ trait Blockchain {
   def collectLposPortfolios[A](pf: PartialFunction[(Address, Portfolio), A]): Map[Address, A]
 
   def invokeScriptResult(txId: TransactionId): Either[ValidationError, InvokeScriptResult]
+}
+
+object Blockchain extends BlockchainExtensions {
+  override implicit def addressTransactions(value: Blockchain): AddressTransactions = super.addressTransactions(value)
+
+  override implicit def distributions(value: Blockchain): Distributions = super.distributions(value)
 }

@@ -11,6 +11,7 @@ import com.acrylplatform.lang.script.v1.ExprScript
 import com.acrylplatform.lang.v1.compiler.Terms
 import com.acrylplatform.settings.{TestFunctionalitySettings, AcrylSettings, loadConfig}
 import com.acrylplatform.state.diffs.ENOUGH_AMT
+import com.acrylplatform.state.utils.BlockchainAddressTransactionsList
 import com.acrylplatform.state.{BlockchainUpdaterImpl, Height}
 import com.acrylplatform.transaction.Asset.Acryl
 import com.acrylplatform.transaction.lease.{LeaseCancelTransactionV1, LeaseTransaction}

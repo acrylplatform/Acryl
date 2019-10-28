@@ -32,7 +32,7 @@ class NetworkSender(trafficLoggerSettings: TrafficLogger.Settings, chainId: Char
         val (send, keep) = messages.splitAt(MessagesBatchSize)
         val futures = send.toVector.map { msg =>
           val result = Promise[Unit]()
-          channel.write(msg).addListener { (f: io.netty.util.concurrent.Future[Void]) =>
+          channel.write(msg).addListener { f: io.netty.util.concurrent.Future[Void] =>
             if (!f.isSuccess) {
               val cause = Option(f.cause()).getOrElse(new IOException("Can't send a message to the channel"))
               log.error(s"Can't send a message to the channel: $msg", cause)

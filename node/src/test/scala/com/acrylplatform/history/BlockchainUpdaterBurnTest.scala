@@ -30,10 +30,12 @@ class BlockchainUpdaterBurnTest extends PropSpec with PropertyChecks with Domain
     masterToAlice: TransferTransactionV1 = TransferTransactionV1
       .selfSigned(Asset.Acryl, master, alice, 3 * Acryl, ts + 1, Asset.Acryl, transferAssetAcrylFee, Array.emptyByteArray)
       .explicitGet()
-    issue: IssueTransactionV1 = IssueTransactionV1.selfSigned(alice, assetName, description, quantity, decimals, false, Acryl, ts + 100).explicitGet()
-    burn: BurnTransactionV1   = BurnTransactionV1.selfSigned(alice, IssuedAsset(issue.assetId()), quantity / 2, Acryl, ts + 200).explicitGet()
+    issue: IssueTransactionV1 = IssueTransactionV1
+      .selfSigned(alice, assetName, description, quantity, decimals, reissuable = false, Acryl, ts + 100)
+      .explicitGet()
+    burn: BurnTransactionV1 = BurnTransactionV1.selfSigned(alice, IssuedAsset(issue.assetId), quantity / 2, Acryl, ts + 200).explicitGet()
     reissue: ReissueTransactionV1 = ReissueTransactionV1
-      .selfSigned(alice, IssuedAsset(issue.assetId()), burn.quantity, true, Acryl, ts + 300)
+      .selfSigned(alice, IssuedAsset(issue.assetId), burn.quantity, reissuable = true, Acryl, ts + 300)
       .explicitGet()
   } yield (ts, genesis, masterToAlice, issue, burn, reissue)
 
@@ -59,12 +61,12 @@ class BlockchainUpdaterBurnTest extends PropSpec with PropertyChecks with Domain
         domain.appendBlock(block1)
 
         domain.appendBlock(block2)
-        val assetDescription1 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId())).get
+        val assetDescription1 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId)).get
         assetDescription1.reissuable should be(false)
         assetDescription1.totalVolume should be(issue.quantity)
 
         domain.appendBlock(block3)
-        val assetDescription2 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId())).get
+        val assetDescription2 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId)).get
         assetDescription2.reissuable should be(false)
         assetDescription2.totalVolume should be(issue.quantity - burn.quantity)
 
@@ -84,7 +86,7 @@ class BlockchainUpdaterBurnTest extends PropSpec with PropertyChecks with Domain
         domain.appendBlock(block1)
 
         domain.appendBlock(block2)
-        val assetDescription1 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId())).get
+        val assetDescription1 = domain.blockchainUpdater.assetDescription(IssuedAsset(issue.assetId)).get
         assetDescription1.reissuable should be(false)
         assetDescription1.totalVolume should be(issue.quantity)
 

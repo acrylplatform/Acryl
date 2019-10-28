@@ -31,8 +31,8 @@ case class ExchangeTransactionV2(buyOrder: Order,
 
   override def version: Byte = 2
 
-  override val builder                 = ExchangeTransactionV2
-  override val assetFee: (Asset, Long) = (Acryl, fee)
+  override val builder: ExchangeTransactionV2.type = ExchangeTransactionV2
+  override val assetFee: (Asset, Long)             = (Acryl, fee)
 
   @ApiModelProperty(hidden = true)
   override val sender: PublicKey = buyOrder.matcherPublicKey

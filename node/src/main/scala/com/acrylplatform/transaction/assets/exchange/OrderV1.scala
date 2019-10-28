@@ -64,7 +64,7 @@ case class OrderV1(@ApiModelProperty(
   override def version: Byte = 1
 
   @ApiModelProperty(hidden = true)
-  override def signature: Array[Byte] = proofs.proofs(0).arr
+  override def signature: Array[Byte] = proofs.proofs.head.arr
 
   @ApiModelProperty(hidden = true)
   val bodyBytes: Coeval[Array[Byte]] = Coeval.evalOnce(
@@ -76,7 +76,7 @@ case class OrderV1(@ApiModelProperty(
   )
 
   @ApiModelProperty(hidden = true)
-  val signatureValid = Coeval.evalOnce(crypto.verify(signature, bodyBytes(), senderPublicKey))
+  val signatureValid: Coeval[Boolean] = Coeval.evalOnce(crypto.verify(signature, bodyBytes(), senderPublicKey))
 
   @ApiModelProperty(hidden = true)
   override val bytes: Coeval[Array[Byte]] = Coeval.evalOnce(bodyBytes() ++ signature)
@@ -173,11 +173,11 @@ object OrderV1 {
           case None      => Acryl
         }
       orderType  <- readByte
-      price      <- read(Longs.fromByteArray _, 8)
-      amount     <- read(Longs.fromByteArray _, 8)
-      timestamp  <- read(Longs.fromByteArray _, 8)
-      expiration <- read(Longs.fromByteArray _, 8)
-      matcherFee <- read(Longs.fromByteArray _, 8)
+      price      <- read(Longs.fromByteArray, 8)
+      amount     <- read(Longs.fromByteArray, 8)
+      timestamp  <- read(Longs.fromByteArray, 8)
+      expiration <- read(Longs.fromByteArray, 8)
+      matcherFee <- read(Longs.fromByteArray, 8)
       signature  <- read(identity, SignatureLength)
     } yield {
       OrderV1(

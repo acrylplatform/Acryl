@@ -34,7 +34,7 @@ case class TransactionsBlockFieldVersion1or2(override val value: Seq[Transaction
 
   override def j: JsObject = Json.obj(name -> JsArray(value.map(_.json())))
 
-  override def b = TransactionsBlockField.serTxs(value, Array(value.size.toByte))
+  override def b: Array[Byte] = TransactionsBlockField.serTxs(value, Array(value.size.toByte))
 
 }
 
@@ -43,7 +43,7 @@ case class TransactionsBlockFieldVersion3(override val value: Seq[Transaction]) 
 
   override def j: JsObject = Json.obj(name -> JsArray(value.map(_.json())))
 
-  override def b = {
+  override def b: Array[Byte] = {
     val txCount = value.size
     val bb      = ByteBuffer.allocate(4)
     TransactionsBlockField.serTxs(value, bb.putInt(txCount).array)

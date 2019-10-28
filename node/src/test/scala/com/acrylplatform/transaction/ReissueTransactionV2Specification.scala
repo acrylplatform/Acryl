@@ -1,6 +1,6 @@
 package com.acrylplatform.transaction
 
-import com.acrylplatform.account.{PublicKey, AddressScheme}
+import com.acrylplatform.account.{AddressScheme, PublicKey}
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.EitherExt2
 import com.acrylplatform.transaction.Asset.IssuedAsset
@@ -28,7 +28,7 @@ class ReissueTransactionV2Specification extends GenericTransactionSpecification[
     first.bytes() shouldEqual second.bytes()
   }
 
-  def generator: Gen[((Seq[com.acrylplatform.transaction.Transaction], ReissueTransactionV2))] =
+  def generator: Gen[(Seq[com.acrylplatform.transaction.Transaction], ReissueTransactionV2)] =
     for {
       (sender, assetName, description, quantity, decimals, _, iFee, timestamp) <- issueParamGen
       fee                                                                      <- smallFeeGen
@@ -36,7 +36,7 @@ class ReissueTransactionV2Specification extends GenericTransactionSpecification[
     } yield {
       val issue = IssueTransactionV1.selfSigned(sender, assetName, description, quantity, decimals, reissuable = true, iFee, timestamp).explicitGet()
       val reissue1 = ReissueTransactionV2
-        .selfSigned(AddressScheme.current.chainId, sender, IssuedAsset(issue.assetId()), quantity, reissuable = reissuable, fee, timestamp)
+        .selfSigned(AddressScheme.current.chainId, sender, IssuedAsset(issue.assetId), quantity, reissuable = reissuable, fee, timestamp)
         .explicitGet()
       (Seq(issue), reissue1)
     }
@@ -45,8 +45,8 @@ class ReissueTransactionV2Specification extends GenericTransactionSpecification[
     Seq(
       (Json.parse("""{
                        "type": 5,
-                       "id": "HbQ7gMoDyRxSU6LbLLBVNTbxASaR8rm4Zck6eYvWVUkB",
-                       "sender": "3N5GRqzDBhjVXnCn44baHcz2GoZy5qLxtTh",
+                       "id": "7N8LyhjzA6iXQhkjUG7Bg59ydf3ahE8xXv2bvDBr9Q9s",
+                       "sender": "3JTDzz1XbK7KeRJXGqpaRFraC92ebStimJ9",
                        "senderPublicKey": "FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z",
                        "fee": 100000000,
                        "feeAssetId": null,
@@ -55,7 +55,7 @@ class ReissueTransactionV2Specification extends GenericTransactionSpecification[
                        "4DFEtUwJ9gjMQMuEXipv2qK7rnhhWEBqzpC3ZQesW1Kh8D822t62e3cRGWNU3N21r7huWnaty95wj2tZxYSvCfro"
                        ],
                        "version": 2,
-                       "chainId": 84,
+                       "chainId": 75,
                        "assetId": "9ekQuYn92natMnMq8KqeGK3Nn7cpKd3BvPEGgD6fFyyz",
                        "quantity": 100000000,
                        "reissuable": true
@@ -63,11 +63,11 @@ class ReissueTransactionV2Specification extends GenericTransactionSpecification[
     """),
        ReissueTransactionV2
          .create(
-           'T',
+           'K',
            PublicKey.fromBase58String("FM5ojNqW7e9cZ9zhPYGkpSP1Pcd8Z3e3MNKYVS5pGJ8Z").explicitGet(),
            IssuedAsset(ByteStr.decodeBase58("9ekQuYn92natMnMq8KqeGK3Nn7cpKd3BvPEGgD6fFyyz").get),
            100000000L,
-           true,
+           reissuable = true,
            100000000L,
            1526287561757L,
            Proofs(Seq(ByteStr.decodeBase58("4DFEtUwJ9gjMQMuEXipv2qK7rnhhWEBqzpC3ZQesW1Kh8D822t62e3cRGWNU3N21r7huWnaty95wj2tZxYSvCfro").get))

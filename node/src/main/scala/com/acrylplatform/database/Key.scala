@@ -23,9 +23,9 @@ object Key {
 
     override def keyBytes: Array[Byte] = key
 
-    override def parse(bytes: Array[Byte]) = parser(bytes)
+    override def parse(bytes: Array[Byte]): V = parser(bytes)
 
-    override def encode(v: V) = encoder(v)
+    override def encode(v: V): Array[Byte] = encoder(v)
   }
 
   def opt[V](name: String, key: Array[Byte], parser: Array[Byte] => V, encoder: V => Array[Byte]): Key[Option[V]] =

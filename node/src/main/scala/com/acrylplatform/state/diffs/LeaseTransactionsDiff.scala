@@ -22,7 +22,7 @@ object LeaseTransactionsDiff {
         val lease   = blockchain.leaseBalance(tx.sender)
         val balance = blockchain.balance(tx.sender, Acryl)
         if (balance - lease.out < tx.amount) {
-          Left(GenericError(s"Cannot lease more than own: Balance:${balance}, already leased: ${lease.out}"))
+          Left(GenericError(s"Cannot lease more than own: Balance:$balance, already leased: ${lease.out}"))
         } else {
           val portfolioDiff: Map[Address, Portfolio] = Map(
             sender    -> Portfolio(-tx.fee, LeaseBalance(0, tx.amount), Map.empty),
@@ -72,7 +72,8 @@ object LeaseTransactionsDiff {
               s"and time=$time > allowMultipleLeaseCancelTransactionUntilTimestamp=${fs.allowMultipleLeaseCancelTransactionUntilTimestamp}"))
 
     } yield
-      Diff(height = height,
+      Diff(
+        height = height,
         tx = tx,
         portfolios = portfolioDiff,
         leaseState = Map(tx.leaseId -> false),

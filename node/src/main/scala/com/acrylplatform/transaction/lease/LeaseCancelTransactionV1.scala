@@ -25,7 +25,7 @@ case class LeaseCancelTransactionV1 private (sender: PublicKey, leaseId: ByteStr
   val bodyBytes: Coeval[Array[Byte]] =
     Coeval.evalOnce(Bytes.concat(Array(builder.typeId), bytesBase()))
 
-  override val bytes = Coeval.evalOnce(Bytes.concat(bodyBytes(), signature.arr))
+  override val bytes: Coeval[Array[Byte]] = Coeval.evalOnce(Bytes.concat(bodyBytes(), signature.arr))
 
   override def version: Byte = 1
 }
