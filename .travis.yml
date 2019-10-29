@@ -1,0 +1,13 @@
+language: scala
+sudo: false
+jdk:
+  - openjdk8
+scala:
+  - 2.12.8
+branches:
+  only:
+    - master
+script:
+  - unset _JAVA_OPTIONS
+  - unset SBT_OPTS
+  - travis_wait 30 sbt -Dquill.macro.log=false -J-Xms3G -J-Xmx3G -J-XX:+UseConcMarkSweepGC -J-XX:+CMSClassUnloadingEnabled ";checkPR"
