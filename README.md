@@ -1,4 +1,4 @@
-# Acryl [![Build Status](https://travis-ci.org/acrylplatform/Acryl.svg?branch=master)](https://travis-ci.org/acrylplatform/Acryl)
+# Acryl [![Build Status](https://travis-ci.com/acrylplatform/Acryl.svg?branch=master)](https://travis-ci.com/acrylplatform/Acryl)
 
 Acryl is an open source [blockchain platform](https://acrylplatform.com/).
 
