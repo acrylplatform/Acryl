@@ -143,7 +143,7 @@ private[database] final class LevelDBDistributions(ldb: LevelDBWriter) extends D
     Either.cond(
       height > canGetAfterHeight,
       createMap(),
-      GenericError(s"Cannot get waves distribution at height less than ${canGetAfterHeight + 1}")
+      GenericError(s"Cannot get acryl distribution at height less than ${canGetAfterHeight + 1}")
     )
   }
 
