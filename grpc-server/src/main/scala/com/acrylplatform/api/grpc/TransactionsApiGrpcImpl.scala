@@ -1,20 +1,18 @@
 package com.acrylplatform.api.grpc
-import com.acrylplatform.account.PublicKey
+
 import com.acrylplatform.api.common.CommonTransactionsApi
-import com.acrylplatform.lang.ValidationError
-import com.acrylplatform.protobuf.transaction.{InvokeScriptResult, PBSignedTransaction, PBTransaction, VanillaTransaction}
+import com.acrylplatform.protobuf.transaction.{InvokeScriptResult, PBSignedTransaction, VanillaTransaction}
 import com.acrylplatform.state.{Blockchain, TransactionId}
 import com.acrylplatform.transaction.AuthorizedTransaction
-import com.acrylplatform.transaction.TxValidationError.GenericError
 import com.acrylplatform.transaction.transfer.TransferTransaction
 import com.acrylplatform.utx.UtxPool
 import com.acrylplatform.wallet.Wallet
 import io.grpc.stub.StreamObserver
+import io.grpc.{Status, StatusRuntimeException}
 import monix.execution.Scheduler
 import monix.reactive.Observable
 
 import scala.concurrent.Future
-import scala.util.Try
 
 class TransactionsApiGrpcImpl(wallet: Wallet,
                               blockchain: Blockchain,
@@ -67,17 +65,8 @@ class TransactionsApiGrpcImpl(wallet: Wallet,
     responseObserver.completeWith(result)
   }
 
-  override def sign(request: SignRequest): Future[PBSignedTransaction] = {
-    def signTransactionWith(tx: PBTransaction, wallet: Wallet, signerAddress: String): Either[ValidationError, PBSignedTransaction] =
-      for {
-        sender <- wallet.findPrivateKey(tx.sender.toString)
-        signer <- if (tx.sender.toString == signerAddress) Right(sender) else wallet.findPrivateKey(signerAddress)
-        tx     <- Try(tx.signed(signer.privateKey)).toEither.left.map(GenericError(_))
-      } yield tx
-
-    val signerAddress: PublicKey = if (request.signerPublicKey.isEmpty) request.getTransaction.sender else request.signerPublicKey.toPublicKeyAccount
-    signTransactionWith(request.getTransaction, wallet, signerAddress.toString).toFuture
-  }
+  override def sign(request: SignRequest): Future[PBSignedTransaction] =
+    throw new StatusRuntimeException(Status.UNIMPLEMENTED)
 
   override def broadcast(tx: PBSignedTransaction): Future[PBSignedTransaction] = {
     commonApi
