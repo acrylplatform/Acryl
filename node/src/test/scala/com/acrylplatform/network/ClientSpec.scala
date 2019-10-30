@@ -53,6 +53,15 @@ class ClientSpec extends FreeSpec with Matchers with MockFactory with Transactio
     channelWasAdded shouldBe true
   }
 
+  // TODO : during the transition
+  "should match application name" in {
+    HandshakeHandler.checkApplicationName("acrylA", "acrylA") shouldBe true
+    HandshakeHandler.checkApplicationName("wavesA", "acrylA") shouldBe true
+
+    HandshakeHandler.checkApplicationName("wavesA", "acrylK") shouldBe false
+    HandshakeHandler.checkApplicationName("wavesA", "wavesK") shouldBe false
+  }
+
   private def createEmbeddedChannel(allChannels: ChannelGroup) = new EmbeddedChannel(
     new HandshakeDecoder(PeerDatabase.NoOp),
     new HandshakeTimeoutHandler(1.minute),
