@@ -105,6 +105,15 @@ sbt "extension-module/run /path/to/configuration"
 4. Click on `OK`
 5. Run this configuration 
 
+## 9. Contributor notes
+
+### Branches
+
+* `master` is a developers' branch;
+* `NODE-XXX` is a feature or a bug fix branch;
+
+A new tag with a version number is created for the release. The latest release for each network can be found in the [Releases section](https://github.com/acrylplatform/Acryl/releases)
+
 # Useful links
 
 - [Official Documentation](https://docs.acrylplatform.com/)
