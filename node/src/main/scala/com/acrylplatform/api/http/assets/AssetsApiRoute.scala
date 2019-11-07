@@ -284,43 +284,62 @@ case class AssetsApiRoute(settings: RestAPISettings, wallet: Wallet, utx: UtxPoo
     }).left.map(ApiError.fromValidationError)
 
   private def assetDetails(assetId: String, full: Boolean): Either[ApiError, JsObject] =
-    (for {
-      id <- ByteStr.decodeBase58(assetId).toOption.toRight("Incorrect asset ID")
-      tt <- blockchain.transactionInfo(id).toRight("Failed to find issue transaction by ID")
-      (h, mtx) = tt
-      tx <- (mtx match {
-        case t: IssueTransaction => Some(t)
-        case _                   => None
-      }).toRight("No issue transaction found with given asset ID")
-      description <- blockchain.assetDescription(IssuedAsset(id)).toRight("Failed to get description of the asset")
-      script = description.script.filter(_ => full)
-      complexity <- script.fold[Either[String, Long]](Right(0))(script => ScriptCompiler.estimate(script, script.stdLibVersion))
-    } yield {
-      JsObject(
-        Seq(
-          "assetId"        -> JsString(id.base58),
-          "issueHeight"    -> JsNumber(h),
-          "issueTimestamp" -> JsNumber(tx.timestamp),
-          "issuer"         -> JsString(tx.sender.address),
-          "name"           -> JsString(new String(tx.name, Charsets.UTF_8)),
-          "description"    -> JsString(new String(tx.description, Charsets.UTF_8)),
-          "decimals"       -> JsNumber(tx.decimals.toInt),
-          "reissuable"     -> JsBoolean(description.reissuable),
-          "quantity"       -> JsNumber(BigDecimal(description.totalVolume)),
-          "scripted"       -> JsBoolean(description.script.nonEmpty),
-          "minSponsoredAssetFee" -> (description.sponsorship match {
-            case 0           => JsNull
-            case sponsorship => JsNumber(sponsorship)
-          })
-        ) ++ script.toSeq.map { script =>
-          "scriptDetails" -> Json.obj(
-            "scriptComplexity" -> JsNumber(BigDecimal(complexity)),
-            "script"           -> JsString(script.bytes().base64),
-            "scriptText"       -> JsString(script.expr.toString) // [WAIT] JsString(Script.decompile(script))
+    if (assetId == "WAVES" || assetId == "ACRYL") // TODO : during the transition
+      Right(
+        JsObject(
+          Seq(
+            "assetId"        -> JsString("WAVES"),
+            "issueHeight"    -> JsNumber(1),
+            "issueTimestamp" -> JsNumber(blockchain.settings.genesisSettings.timestamp),
+            "issuer"         -> JsString(""),
+            "name"           -> JsString("Acryl"),
+            "description"    -> JsString("Acryl is a blockchain ecosystem that offers comprehensive and effective blockchain-based tools for businesses, individuals and developers. Acryl Platform offers unprecedented throughput and flexibility. Features include the LPoS consensus algorithm, Acryl-NG protocol and advanced smart contract functionality."),
+            "decimals"       -> JsNumber(8),
+            "reissuable"     -> JsBoolean(false),
+            "quantity"       -> JsNumber(blockchain.settings.genesisSettings.initialBalance),
+            "scripted"       -> JsBoolean(false),
+            "minSponsoredAssetFee" -> JsNull
           )
-        }
+        )
       )
-    }).left.map(m => CustomValidationError(m))
+    else
+      (for {
+        id <- ByteStr.decodeBase58(assetId).toOption.toRight("Incorrect asset ID")
+        tt <- blockchain.transactionInfo(id).toRight("Failed to find issue transaction by ID")
+        (h, mtx) = tt
+        tx <- (mtx match {
+          case t: IssueTransaction => Some(t)
+          case _                   => None
+        }).toRight("No issue transaction found with given asset ID")
+        description <- blockchain.assetDescription(IssuedAsset(id)).toRight("Failed to get description of the asset")
+        script = description.script.filter(_ => full)
+        complexity <- script.fold[Either[String, Long]](Right(0))(script => ScriptCompiler.estimate(script, script.stdLibVersion))
+      } yield {
+        JsObject(
+          Seq(
+            "assetId"        -> JsString(id.base58),
+            "issueHeight"    -> JsNumber(h),
+            "issueTimestamp" -> JsNumber(tx.timestamp),
+            "issuer"         -> JsString(tx.sender.address),
+            "name"           -> JsString(new String(tx.name, Charsets.UTF_8)),
+            "description"    -> JsString(new String(tx.description, Charsets.UTF_8)),
+            "decimals"       -> JsNumber(tx.decimals.toInt),
+            "reissuable"     -> JsBoolean(description.reissuable),
+            "quantity"       -> JsNumber(BigDecimal(description.totalVolume)),
+            "scripted"       -> JsBoolean(description.script.nonEmpty),
+            "minSponsoredAssetFee" -> (description.sponsorship match {
+              case 0           => JsNull
+              case sponsorship => JsNumber(sponsorship)
+            })
+          ) ++ script.toSeq.map { script =>
+            "scriptDetails" -> Json.obj(
+              "scriptComplexity" -> JsNumber(BigDecimal(complexity)),
+              "script"           -> JsString(script.bytes().base64),
+              "scriptText"       -> JsString(script.expr.toString) // [WAIT] JsString(Script.decompile(script))
+            )
+          }
+        )
+      }).left.map(m => CustomValidationError(m))
 
   def sponsorRoute: Route =
     processRequest("sponsor", (req: SponsorFeeRequest) => doBroadcast(TransactionFactory.sponsor(req, wallet, time)))
