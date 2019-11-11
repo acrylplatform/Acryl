@@ -52,8 +52,8 @@ case class FunctionalitySettings(featureCheckBlocksPeriod: Int,
 
 object FunctionalitySettings {
   val MAINNET = apply(
-    featureCheckBlocksPeriod = 30,
-    blocksForFeatureActivation = 25,
+    featureCheckBlocksPeriod = 5000,
+    blocksForFeatureActivation = 5000,
     allowTemporaryNegativeUntil = 0,
     generationBalanceDepthFrom50To1000AfterHeight = 0,
     minimalGeneratingBalanceAfter = 0,
