@@ -14,3 +14,13 @@ inTask(docker)(
       (Test / sourceDirectory).value / "container" / "start-acryl.sh"
     )
   ))
+
+lazy val printTests = taskKey[Unit]("Print all available Test's")
+
+printTests := {
+  val logger: Logger = ConsoleLogger()
+  val tests = (definedTests in Test).value
+  tests.zipWithIndex foreach { case (t, i) =>
+    logger.info(s"[$i] ${t.name}")
+  }
+}
