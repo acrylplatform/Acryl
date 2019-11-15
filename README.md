@@ -45,6 +45,10 @@ cd Acryl
 ```
 sbt checkPR
 ```
+* if test failed, you should increase memory limits:
+```
+SBT_OPTS="-Xms512M -Xmx15024M -Xss128M -XX:MaxMetaspaceSize=8192M" sbt checkPR
+```
 
 ## 4. Running NODE integration tests (optional)
 
