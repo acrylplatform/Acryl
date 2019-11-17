@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 trait NS {
-  def connect(remoteAddress: InetSocketAddress): Unit
+  def connect(remoteAddress: InetSocketAddress): Channel
 
   def shutdown(): Unit
 
@@ -191,7 +191,7 @@ object NetworkServer extends ScorexLogging {
       }
     }
 
-    def doConnect(remoteAddress: InetSocketAddress): Unit =
+    def doConnect(remoteAddress: InetSocketAddress): Channel =
       outgoingChannels.computeIfAbsent(
         remoteAddress,
         _ => {
@@ -245,7 +245,7 @@ object NetworkServer extends ScorexLogging {
       }
 
     new NS {
-      override def connect(remoteAddress: InetSocketAddress): Unit = doConnect(remoteAddress)
+      override def connect(remoteAddress: InetSocketAddress): Channel = doConnect(remoteAddress)
 
       override def shutdown(): Unit = doShutdown()
 

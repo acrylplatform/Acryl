@@ -1,5 +1,7 @@
 package com.acrylplatform.api
 
+import java.net.{InetSocketAddress, SocketAddress}
+
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -20,6 +22,9 @@ import com.acrylplatform.transaction.assets.exchange.{ExchangeTransactionV1, Exc
 import com.acrylplatform.transaction.lease._
 import com.acrylplatform.transaction.smart.{InvokeScriptTransaction, SetScriptTransaction}
 import com.acrylplatform.transaction.transfer._
+import io.netty.channel.Channel
+import io.netty.channel.local.LocalAddress
+import io.netty.util.NetUtil.toSocketAddressString
 import monix.execution.Scheduler
 import play.api.libs.json._
 
@@ -39,6 +44,15 @@ package object http extends ApiMarshallers {
       intToByteReads orElse
       stringToByteReads
   }
+
+  private def formatAddress(sa: SocketAddress) = sa match {
+    case null                   => ""
+    case l: LocalAddress        => s" $l"
+    case isa: InetSocketAddress => s" ${toSocketAddressString(isa)}"
+    case x                      => s" $x" // For EmbeddedSocketAddress
+  }
+
+  def id(chan: Channel, prefix: String = ""): String = s"[$prefix${chan.id().asShortText()}${formatAddress(chan.remoteAddress())}]"
 
   def createTransaction(senderPk: String, jsv: JsObject)(txToResponse: Transaction => ToResponseMarshallable): ToResponseMarshallable = {
     val typeId = (jsv \ "type").as[Byte]
