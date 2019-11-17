@@ -57,15 +57,15 @@ class WideStateGenerationSuite extends FreeSpec with WaitForHeight2 with Matcher
         generateTransfersToRandomAddresses(requestsCount / 2, nodeAddresses) ++
           generateTransfersBetweenAccounts(requestsCount / 2, b))
 
-      _ <- Await.ready(traverse(nodes)(_.waitFor[Int]("UTX is empty")(_.utxSize, _ == 0, 5.seconds)), 7.minutes)
+      _ <- Await.ready(traverse(nodes)(_.waitFor[Int]("UTX is empty")(_.utxSize, _ == 0, 5.seconds)), 14.minutes)
 
       height <- traverse(nodes)(_.height).map(_.max)
-      _      <- Await.ready(nodes.waitForSameBlockHeadersAt(height + 1), 5.minutes)
+      _      <- Await.ready(nodes.waitForSameBlockHeadersAt(height + 1), 8.minutes)
 
-      _ <- Await.ready(traverse(nodes)(assertHasTxs(_, uploadedTxs.map(_.id).toSet)), 5.minutes)
+      _ <- Await.ready(traverse(nodes)(assertHasTxs(_, uploadedTxs.map(_.id).toSet)), 8.minutes)
     } yield ()
 
-    val limit = GlobalTimer.instance.schedule(Future.failed(new TimeoutException("Time is out for test")), 18.minutes)
+    val limit = GlobalTimer.instance.schedule(Future.failed(new TimeoutException("Time is out for test")), 22.minutes)
     val testWithDumps = Future.firstCompletedOf(Seq(test, limit)).recoverWith {
       case e =>
         for {
@@ -77,7 +77,7 @@ class WideStateGenerationSuite extends FreeSpec with WaitForHeight2 with Matcher
         }
     }
 
-    Await.result(testWithDumps, 18.minutes)
+    Await.result(testWithDumps, 22.minutes)
   }
 
   private def assertHasTxs(node: Node, txIds: Set[String]): Future[Unit] = {
