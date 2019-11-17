@@ -8,8 +8,9 @@ libraryDependencies ++= Dependencies.itTest
 inTask(docker)(
   Seq(
     imageNames := Seq(ImageName("com.acrylplatform/node-it")),
-    exposedPorts := Set(6863, 6869), // NetworkApi, RestApi
-    additionalFiles ++= (LocalProject("node") / Universal / stage).value +: Seq(
+    exposedPorts := Set(6870, 6869), // NetworkApi, RestApi
+    additionalFiles ++= Seq(
+      (LocalProject("node") / Universal / stage).value,
       (Test / resourceDirectory).value / "template.conf",
       (Test / sourceDirectory).value / "container" / "start-acryl.sh"
     )
