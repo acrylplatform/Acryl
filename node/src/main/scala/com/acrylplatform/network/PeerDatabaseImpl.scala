@@ -126,7 +126,9 @@ class PeerDatabaseImpl(settings: NetworkSettings) extends PeerDatabase with Scor
     val rawPeers = for {
       inetAddress <- knownPeers.keySet
       address     <- Option(inetAddress.getAddress)
-    } yield s"${address.getHostAddress}:${inetAddress.getPort}"
+    } yield if(address.getAddress.length == 16)
+      s"[${address.getHostAddress}]:${inetAddress.getPort}"
+    else s"${address.getHostAddress}:${inetAddress.getPort}"
 
     JsonFileStorage.save[PeersPersistenceType](rawPeers, f.getCanonicalPath)
   }

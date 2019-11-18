@@ -13,6 +13,7 @@ import org.scalatest.{FreeSpec, Matchers}
 import org.scalatestplus.scalacheck.{ScalaCheckPropertyChecks => PropertyChecks}
 
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success, Try}
 
 class LegacyFrameCodecSpec extends FreeSpec with Matchers with MockFactory with PropertyChecks with TransactionGen {
 
@@ -82,6 +83,35 @@ class LegacyFrameCodecSpec extends FreeSpec with Matchers with MockFactory with 
 
     ch.inboundMessages().size() shouldEqual 2
   }
+
+  "should should serialize and deserialize KnownPeers, version IPv4" in {
+    val msg   = KnownPeers(Seq(new InetSocketAddress("127.0.0.1", 6870)))
+    val bytes = serializePeers(msg, PeersSpec)
+    val deserializeMsg  = deserializePeers(bytes, PeersSpec) match {
+      case Success(value) => value
+      case Failure(exception) => throw exception
+    }
+
+    deserializeMsg shouldEqual msg
+  }
+
+  "should should serialize and deserialize KnownPeers, version IPv6" in {
+    val msg   = KnownPeers(Seq(new InetSocketAddress("::1", 6870)))
+    val bytes = serializePeers(msg, PeersSpec)
+    val deserializeMsg  = deserializePeers(bytes, PeersSpec) match {
+      case Success(value) => value
+      case Failure(exception) => throw exception
+    }
+
+    deserializeMsg shouldEqual msg
+  }
+
+  private def serializePeers(msg: KnownPeers, spec: MessageSpec[KnownPeers]): Array[Byte] =
+    spec.serializeData(msg)
+
+  private def deserializePeers(bytes: Array[Byte], spec: MessageSpec[KnownPeers]): Try[KnownPeers] =
+    spec.deserializeData(bytes)
+
 
   private def write[T <: AnyRef](buff: ByteBuf, msg: T, spec: MessageSpec[T]): Unit = {
     val bytes    = spec.serializeData(msg)

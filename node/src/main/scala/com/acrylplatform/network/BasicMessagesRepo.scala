@@ -70,7 +70,10 @@ object PeersSpec extends MessageSpec[KnownPeers] {
 
     xs.foldLeft(lengthBytes) {
       case (bs, (peerAddress, peerPort)) =>
-        Bytes.concat(bs, peerAddress, Ints.toByteArray(peerPort)) // TODO: Add support IPv6
+        if (peerAddress.length == AddressLengthIPv4)
+          Bytes.concat(bs, Array.fill[Byte](10)(0), Array.fill[Byte](2)(0xFF.toByte), peerAddress, Ints.toByteArray(peerPort))
+        else
+          Bytes.concat(bs, peerAddress, Ints.toByteArray(peerPort))
     }
   }
 }
