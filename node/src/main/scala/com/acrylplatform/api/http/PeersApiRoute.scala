@@ -93,16 +93,16 @@ case class PeersApiRoute(settings: RestAPISettings,
     json[ConnectReq] { req =>
       val add: InetSocketAddress = new InetSocketAddress(InetAddress.getByName(req.host), req.port)
       val channel: Channel = connectToPeer(add)
-      val chanelIsCreated: Boolean = channel != null && channel.isInstanceOf[Channel]
+      val channelIsCreated: Boolean = channel != null && channel.isInstanceOf[Channel]
 
       Json.obj(
         "hostname" -> add.getHostName,
         "status"     -> "Trying to connect",
-        "open"       -> (if (chanelIsCreated) channel.isOpen else false),
-        "active"     -> (if (chanelIsCreated) channel.isActive else false),
-        "registered" -> (if (chanelIsCreated) channel.isRegistered else false),
-        "writable"   -> (if (chanelIsCreated) channel.isWritable else false),
-        "id"         -> (if (chanelIsCreated) id(channel) else "")
+        "open"       -> (if (channelIsCreated) channel.isOpen else false),
+        "active"     -> (if (channelIsCreated) channel.isActive else false),
+        "registered" -> (if (channelIsCreated) channel.isRegistered else false),
+        "writable"   -> (if (channelIsCreated) channel.isWritable else false),
+        "id"         -> (if (channelIsCreated) id(channel) else "")
       )
     }
   }
