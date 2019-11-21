@@ -45,11 +45,16 @@ cd Acryl
 ```
 sbt checkPR
 ```
+* if test failed, you should increase memory limits:
+```
+SBT_OPTS="-Xms512M -Xmx8192M -Xss128M -XX:MaxMetaspaceSize=8192M" sbt checkPR
+```
 
 ## 4. Running NODE integration tests (optional)
 
 Create a Docker image before you run any test: `sbt node-it/docker`
 
+- Retrieve the list of available tests: `sbt node-it/printTests`
 - Run all tests: `SBT_THREAD_NUMBER=4 sbt node-it/test` . You can increase or decrease number of parallel running tests by changing `SBT_THREAD_NUMBER`
 - Run one test: `sbt node-it/testOnly *.TestClassName` or `node-it/testOnly full.package.TestClassName`
 

@@ -104,7 +104,7 @@ class PeerDatabaseImplSpecification extends path.FreeSpecLike with Matchers {
     }
 
     "filters out wildcard addresses" in {
-      database.addCandidate(new InetSocketAddress("0.0.0.0", 6863))
+      database.addCandidate(new InetSocketAddress("0.0.0.0", 6870))
       database.randomPeer(Set(address1, address2)) shouldBe None
     }
 

@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
 trait NS {
-  def connect(remoteAddress: InetSocketAddress): Unit
+  def connect(remoteAddress: InetSocketAddress): Channel
 
   def shutdown(): Unit
 
@@ -88,7 +88,7 @@ object NetworkServer extends ScorexLogging {
     val inboundConnectionFilter: PipelineInitializer.HandlerWrapper =
       new InboundConnectionFilter(peerDatabase, settings.networkSettings.maxInboundConnections, settings.networkSettings.maxConnectionsPerHost)
 
-    val (mesageObserver, newtworkMessages)            = MessageObserver()
+    val (messageObserver, networkMessages)            = MessageObserver()
     val (channelClosedHandler, closedChannelsSubject) = ChannelClosedHandler()
     val discardingHandler                             = new DiscardingHandler(lastBlockInfos.map(_.ready))
     val peerConnections                               = new ConcurrentHashMap[PeerKey, Channel](10, 0.9f, 10)
@@ -121,7 +121,7 @@ object NetworkServer extends ScorexLogging {
           writeErrorHandler,
           peerSynchronizer,
           historyReplier,
-          mesageObserver,
+          messageObserver,
           fatalErrorHandler
         )))
         .bind(settings.networkSettings.bindAddress)
@@ -152,7 +152,7 @@ object NetworkServer extends ScorexLogging {
         writeErrorHandler,
         peerSynchronizer,
         historyReplier,
-        mesageObserver,
+        messageObserver,
         fatalErrorHandler
       )))
 
@@ -191,7 +191,7 @@ object NetworkServer extends ScorexLogging {
       }
     }
 
-    def doConnect(remoteAddress: InetSocketAddress): Unit =
+    def doConnect(remoteAddress: InetSocketAddress): Channel =
       outgoingChannels.computeIfAbsent(
         remoteAddress,
         _ => {
@@ -240,16 +240,16 @@ object NetworkServer extends ScorexLogging {
       } finally {
         workerGroup.shutdownGracefully().await()
         bossGroup.shutdownGracefully().await()
-        mesageObserver.shutdown()
+        messageObserver.shutdown()
         channelClosedHandler.shutdown()
       }
 
     new NS {
-      override def connect(remoteAddress: InetSocketAddress): Unit = doConnect(remoteAddress)
+      override def connect(remoteAddress: InetSocketAddress): Channel = doConnect(remoteAddress)
 
       override def shutdown(): Unit = doShutdown()
 
-      override val messages: Messages = newtworkMessages
+      override val messages: Messages = networkMessages
 
       override val closedChannels: Observable[Channel] = closedChannelsSubject
     }

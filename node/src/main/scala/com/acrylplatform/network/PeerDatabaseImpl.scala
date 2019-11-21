@@ -31,13 +31,13 @@ class PeerDatabaseImpl(settings: NetworkSettings) extends PeerDatabase with Scor
   private val reasons          = mutable.Map.empty[InetAddress, String]
   private val unverifiedPeers  = EvictingQueue.create[InetSocketAddress](settings.maxUnverifiedPeers)
 
-  for (a <- settings.knownPeers.view.map(inetSocketAddress(_, 6863))) {
+  for (a <- settings.knownPeers.view.map(inetSocketAddress(_, 6870))) {
     // add peers from config with max timestamp so they never get evicted from the list of known peers
     doTouch(a, Long.MaxValue)
   }
 
   for (f <- settings.file if f.exists()) try {
-    JsonFileStorage.load[PeersPersistenceType](f.getCanonicalPath).foreach(a => touch(inetSocketAddress(a, 6863)))
+    JsonFileStorage.load[PeersPersistenceType](f.getCanonicalPath).foreach(a => touch(inetSocketAddress(a, 6870)))
     log.info(s"Loaded ${peersPersistence.size} known peer(s) from ${f.getName}")
   } catch {
     case NonFatal(_) => log.info("Legacy or corrupted peers.dat, ignoring, starting all over from known-peers...")

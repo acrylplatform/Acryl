@@ -48,7 +48,7 @@ trait IntegrationSuiteWithThreeAddresses
       })
     }
 
-    def waitForTxsToReachAllNodes(txIds: Seq[String]) = {
+    def waitForTxsToReachAllNodes(txIds: Seq[String]): Unit = {
       val txNodePairs = for {
         txId <- txIds
         node <- nodes

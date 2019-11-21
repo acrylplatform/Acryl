@@ -99,7 +99,7 @@ class RollbackSuite extends FunSuite with CancelAfterFailure with TransferSendin
   test("Data transaction rollback") {
     val node       = nodes.head
     val entry1     = IntegerDataEntry("1", 0)
-    val entry2     = BooleanDataEntry("2", true)
+    val entry2     = BooleanDataEntry("2", value = true)
     val entry3     = IntegerDataEntry("1", 1)
     val txsBefore0 = sender.transactionsByAddress(firstAddress, 10)
 
@@ -116,14 +116,14 @@ class RollbackSuite extends FunSuite with CancelAfterFailure with TransferSendin
     assert(data2 == List(entry3, entry2))
 
     nodes.rollback(tx1height, returnToUTX = false)
-    nodes.waitForSameBlockHeadesAt(tx1height)
+    nodes.waitForSameBlockHeadersAt(tx1height)
 
     val data1 = node.getData(firstAddress)
     assert(data1 == List(entry1))
     sender.transactionsByAddress(firstAddress, 10) should contain theSameElementsAs txsBefore1
 
     nodes.rollback(tx1height - 1, returnToUTX = false)
-    nodes.waitForSameBlockHeadesAt(tx1height - 1)
+    nodes.waitForSameBlockHeadersAt(tx1height - 1)
 
     val data0 = node.getData(firstAddress)
     assert(data0 == List.empty)
@@ -172,6 +172,7 @@ class RollbackSuite extends FunSuite with CancelAfterFailure with TransferSendin
     }""".stripMargin
 
     val pkSwapBC1 = KeyPair.fromSeed(sender.seed(firstAddress)).right.get
+    //noinspection ScalaDeprecation
     val script    = ScriptCompiler(scriptText, isAssetScript = false).right.get._1
     val sc1SetTx = SetScriptTransaction
       .selfSigned(sender = pkSwapBC1, script = Some(script), fee = setScriptFee, timestamp = System.currentTimeMillis())
@@ -189,10 +190,10 @@ class RollbackSuite extends FunSuite with CancelAfterFailure with TransferSendin
     val dtx    = sender.putData(firstAddress, List(entry1), calcDataFee(List(entry1)) + smartFee).id
     nodes.waitForHeightAriseAndTxPresent(dtx)
 
-    val tx = sender.transfer(firstAddress, firstAddress, transferAmount, smartMinFee, version = 2, waitForTx = true).id
+    val tx = sender.transfer(firstAddress, firstAddress, transferAmount, smartMinFee, waitForTx = true).id
 
     nodes.rollback(height)
-    nodes.waitForSameBlockHeadesAt(height)
+    nodes.waitForSameBlockHeadersAt(height)
 
     nodes.waitForHeightArise()
 
@@ -207,13 +208,13 @@ class RollbackSuite extends FunSuite with CancelAfterFailure with TransferSendin
       (1, "1 of N"),
       (nodes.size, "N of N")
     )) { (num, name) =>
-    test(s"generate more blocks and resynchronise after rollback ${name}") {
+    test(s"generate more blocks and resynchronise after rollback $name") {
       val baseHeight = nodes.map(_.height).max + 5
       nodes.waitForHeight(baseHeight)
       val rollbackNodes = Random.shuffle(nodes).take(num)
       rollbackNodes.foreach(_.rollback(baseHeight - 1))
       nodes.waitForHeightArise()
-      nodes.waitForSameBlockHeadesAt(baseHeight)
+      nodes.waitForSameBlockHeadersAt(baseHeight)
     }
   }
 }

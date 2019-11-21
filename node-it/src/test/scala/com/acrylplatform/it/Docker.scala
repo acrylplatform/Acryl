@@ -70,7 +70,7 @@ class Docker(suiteConfig: Config = empty, tag: String = "", enableProfiling: Boo
   private val genesisOverride = Docker.genesisOverride
 
   // a random network in 10.x.x.x range
-  val networkSeed = Random.nextInt(0x100000) << 4 | 0x0A000000
+  private val networkSeed = Random.nextInt(0x100000) << 4 | 0x0A000000
   // 10.x.x.x/28 network will accommodate up to 13 nodes
   private val networkPrefix = s"${InetAddress.getByAddress(toByteArray(networkSeed)).getHostAddress}/28"
 
@@ -270,13 +270,14 @@ class Docker(suiteConfig: Config = empty, tag: String = "", enableProfiling: Boo
     }
 
   private def getNodeInfo(containerId: String, settings: AcrylSettings): NodeInfo = {
-    val restApiPort = settings.restAPISettings.port
-    val networkPort = settings.networkSettings.bindAddress.getPort
+    val restApiPort     = settings.restAPISettings.port
+    val networkPort     = settings.networkSettings.bindAddress.getPort
+    val dockerIpAddress = settings.networkSettings.dockerIpAddress
 
     val containerInfo  = inspectContainer(containerId)
     val acrylIpAddress = containerInfo.networkSettings().networks().get(acrylNetwork.name()).ipAddress()
 
-    NodeInfo(restApiPort, networkPort, acrylIpAddress, containerInfo.networkSettings().ports())
+    NodeInfo(restApiPort, networkPort, acrylIpAddress, containerInfo.networkSettings().ports(), dockerIpAddress)
   }
 
   private def inspectContainer(containerId: String): ContainerInfo = {
@@ -553,9 +554,9 @@ object Docker {
       .map { case (k, v) => s"-D$k=$v" }
       .mkString(" ")
 
-  case class NodeInfo(restApiPort: Int, networkPort: Int, acrylIpAddress: String, ports: JMap[String, JList[PortBinding]]) {
-    val nodeApiEndpoint: URL                       = new URL(s"http://localhost:${externalPort(restApiPort)}")
-    val hostNetworkAddress: InetSocketAddress      = new InetSocketAddress("localhost", externalPort(networkPort))
+  case class NodeInfo(restApiPort: Int, networkPort: Int, acrylIpAddress: String, ports: JMap[String, JList[PortBinding]], dockerIpAddress: String = "localhost") {
+    val nodeApiEndpoint: URL                       = new URL(s"http://$dockerIpAddress:${externalPort(restApiPort)}")
+    val hostNetworkAddress: InetSocketAddress      = new InetSocketAddress(dockerIpAddress, externalPort(networkPort))
     val containerNetworkAddress: InetSocketAddress = new InetSocketAddress(acrylIpAddress, networkPort)
 
     def externalPort(internalPort: Int): Int = ports.get(s"$internalPort/tcp").get(0).hostPort().toInt

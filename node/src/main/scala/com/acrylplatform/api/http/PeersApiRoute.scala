@@ -17,7 +17,7 @@ import scala.collection.JavaConverters._
 @Path("/peers")
 @Api(value = "/peers", description = "Get info about peers", position = 2)
 case class PeersApiRoute(settings: RestAPISettings,
-                         connectToPeer: InetSocketAddress => Unit,
+                         connectToPeer: InetSocketAddress => Channel,
                          peerDatabase: PeerDatabase,
                          establishedConnections: ConcurrentMap[Channel, PeerInfo])
     extends ApiRoute
@@ -25,7 +25,7 @@ case class PeersApiRoute(settings: RestAPISettings,
 
   import PeersApiRoute._
 
-  override lazy val route =
+  override lazy val route: Route =
     pathPrefix("peers") {
       allPeers ~ connectedPeers ~ blacklistedPeers ~ suspendedPeers ~ connect ~ clearBlacklist
     }
@@ -92,9 +92,18 @@ case class PeersApiRoute(settings: RestAPISettings,
   def connect: Route = (path("connect") & post & withAuth) {
     json[ConnectReq] { req =>
       val add: InetSocketAddress = new InetSocketAddress(InetAddress.getByName(req.host), req.port)
-      connectToPeer(add)
+      val channel: Channel = connectToPeer(add)
+      val channelIsCreated: Boolean = channel != null && channel.isInstanceOf[Channel]
 
-      Json.obj("hostname" -> add.getHostName, "status" -> "Trying to connect")
+      Json.obj(
+        "hostname" -> add.getHostName,
+        "status"     -> "Trying to connect",
+        "open"       -> (if (channelIsCreated) channel.isOpen else false),
+        "active"     -> (if (channelIsCreated) channel.isActive else false),
+        "registered" -> (if (channelIsCreated) channel.isRegistered else false),
+        "writable"   -> (if (channelIsCreated) channel.isWritable else false),
+        "id"         -> (if (channelIsCreated) id(channel) else "")
+      )
     }
   }
 

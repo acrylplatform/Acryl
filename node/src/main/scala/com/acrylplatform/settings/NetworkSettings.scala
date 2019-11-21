@@ -18,6 +18,7 @@ case class UPnPSettings(enable: Boolean, gatewayTimeout: FiniteDuration, discove
 case class NetworkSettings(file: Option[File],
                            bindAddress: InetSocketAddress,
                            declaredAddress: Option[InetSocketAddress],
+                           dockerIpAddress: String,
                            nodeName: String,
                            nonce: Long,
                            knownPeers: Seq[String],
@@ -62,6 +63,7 @@ object NetworkSettings {
       new InetSocketAddress(uri.getHost, uri.getPort)
     }
 
+    val dockerIpAddress              = config.as[String]("docker-ip-address")
     val knownPeers                   = config.as[Seq[String]]("known-peers")
     val peersDataResidenceTime       = config.as[FiniteDuration]("peers-data-residence-time")
     val blackListResidenceTime       = config.as[FiniteDuration]("black-list-residence-time")
@@ -84,6 +86,7 @@ object NetworkSettings {
       file,
       bindAddress,
       declaredAddress,
+      dockerIpAddress,
       nodeName,
       nonce,
       knownPeers,
