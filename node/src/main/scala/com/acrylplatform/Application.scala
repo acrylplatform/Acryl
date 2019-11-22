@@ -33,7 +33,7 @@ import com.acrylplatform.settings.AcrylSettings
 import com.acrylplatform.state.Blockchain
 import com.acrylplatform.state.appender.{BlockAppender, ExtensionAppender, MicroblockAppender}
 import com.acrylplatform.transaction.{Asset, Transaction}
-import com.acrylplatform.utils.{LoggerFacade, NTP, ScorexLogging, SystemInformationReporter, Time, UtilApp}
+import com.acrylplatform.utils.{LoggerFacade, NTP, NodeStatus, ScorexLogging, SystemInformationReporter, Time, UtilApp}
 import com.acrylplatform.utx.{UtxPool, UtxPoolImpl}
 import com.acrylplatform.wallet.Wallet
 import io.netty.channel.Channel
@@ -316,6 +316,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
     }
 
     extensions.foreach(_.start())
+
+    NodeStatus.start(settings.nodeStatus, blockchainUpdater, wallet, network)
 
     // on unexpected shutdown
     sys.addShutdownHook {
