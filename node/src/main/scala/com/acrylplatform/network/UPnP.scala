@@ -43,17 +43,17 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
       log.error("Unable to discover UPnP gateway devices: " + t.toString)
   }
 
-  def addPort(port: Int): Either[InetAddress, String] = externalAddress match {
+  def addPort(port: Int): Either[String, InetAddress] = externalAddress match {
     case Some(externalAddr) =>
       localAddress match {
         case Some(address) =>
           if (gateway.get.addPortMapping(port, port, address.getHostAddress, "TCP", "Scorex"))
-            Left(externalAddr)
+            Right(externalAddr)
           else
-            Right("Unable to map port " + port)
-        case None => Right("No local address")
+            Left("Unable to map port " + port)
+        case None => Left("No local address")
       }
-    case None => Right("No external address")
+    case None => Left("No external address")
   }
 
   def deletePort(port: Int): Try[Unit] =
