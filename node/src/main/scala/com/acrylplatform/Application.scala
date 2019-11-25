@@ -164,7 +164,9 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
             case Left(string) =>
               log.error(string)
               None
-            case Right(externalAddr) => Option(new InetSocketAddress(externalAddr.getHostAddress, settings.networkSettings.bindAddress.getPort))
+            case Right(externalAddr) =>
+              log.debug("Mapped port [" + externalAddr + "]:" + settings.networkSettings.bindAddress.getPort)
+              Option(new InetSocketAddress(externalAddr.getHostAddress, settings.networkSettings.bindAddress.getPort))
           }
       }
 
