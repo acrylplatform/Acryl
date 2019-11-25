@@ -143,25 +143,35 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         allChannels.broadcast(LocalScoreChanged(x))
       }(scheduler)
 
+    def getDeclaredAddress(declaredAddress: Option[InetSocketAddress]): Option[InetSocketAddress] =
+      declaredAddress match {
+        case Some(address) =>
+          upnp.addPort(address.getPort) match {
+            case Left(string) =>
+              log.error(string)
+              Option(address)
+            case Right(externalAddr) =>
+              if (externalAddr != address.getAddress) {
+                log.debug("Mapped port [" + address + "]:" + address.getPort)
+                Option(address)
+              } else {
+                log.debug("Mapped port [" + externalAddr + "]:" + address.getPort)
+                Option(new InetSocketAddress(externalAddr.getHostAddress, address.getPort))
+              }
+          }
+        case None =>
+          upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
+            case Left(string) =>
+              log.error(string)
+              None
+            case Right(externalAddr) => Option(new InetSocketAddress(externalAddr.getHostAddress, settings.networkSettings.bindAddress.getPort))
+          }
+      }
+
     val networkSettingsCopy =
       if (settings.networkSettings.uPnPSettings.enable)
         settings.networkSettings.copy(
-          declaredAddress = settings.networkSettings.declaredAddress match {
-            case Some(address) =>
-              for (addr <- settings.networkSettings.declaredAddress)
-                upnp.addPort(addr.getPort) match {
-                  case Left(string) => log.error(string)
-                  case Right(externalAddr) => log.debug("Mapped port [" + externalAddr + "]:" + addr.getPort)
-                }
-              Option(address)
-            case None =>
-              upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
-                case Left(string) =>
-                  log.error(string)
-                  None
-                case Right(externalAddr) => Option(new InetSocketAddress(externalAddr.getHostAddress, settings.networkSettings.bindAddress.getPort))
-              }
-          }
+          declaredAddress = getDeclaredAddress(settings.networkSettings.declaredAddress)
         )
       else
         settings.networkSettings.copy()
