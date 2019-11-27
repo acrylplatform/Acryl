@@ -151,12 +151,12 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
               log.error(string)
               Option(address)
             case Right(externalAddr) =>
-              if (externalAddr != address.getAddress) {
+              if (externalAddr != address) {
                 log.debug("Mapped port [" + address + "]:" + address.getPort)
                 Option(address)
               } else {
-                log.debug("Mapped port [" + externalAddr + "]:" + address.getPort)
-                Option(new InetSocketAddress(externalAddr.getHostAddress, address.getPort))
+                log.debug("Mapped port [" + externalAddr + "]:" + externalAddr.getPort)
+                Option(externalAddr)
               }
           }
         case None =>
@@ -165,8 +165,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
               log.error(string)
               None
             case Right(externalAddr) =>
-              log.debug("Mapped port [" + externalAddr + "]:" + settings.networkSettings.bindAddress.getPort)
-              Option(new InetSocketAddress(externalAddr.getHostAddress, settings.networkSettings.bindAddress.getPort))
+              log.debug("Mapped port [" + externalAddr + "]:" + externalAddr.getPort)
+              Option(externalAddr)
           }
       }
 

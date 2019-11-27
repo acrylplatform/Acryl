@@ -1,9 +1,11 @@
 package com.acrylplatform.network
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
+
 import com.acrylplatform.settings.UPnPSettings
 import com.acrylplatform.utils.ScorexLogging
 import org.bitlet.weupnp.{GatewayDevice, GatewayDiscover}
+
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -43,18 +45,13 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
       log.error("Unable to discover UPnP gateway devices: " + t.toString)
   }
 
-  def addPort(port: Int): Either[String, InetAddress] = externalAddress match {
-    case Some(externalAddr) =>
-      localAddress match {
-        case Some(address) =>
-          if (gateway.get.addPortMapping(port, port, address.getHostAddress, "TCP", "Scorex"))
-            Right(externalAddr)
-          else
-            Left("Unable to map port " + port)
-        case None => Left("No local address")
+  def addPort(port: Int): Either[String, InetSocketAddress] =
+    if (externalAddress.nonEmpty && localAddress.nonEmpty)
+      portMapping(localAddress.get, port, port, 20) match {
+        case 0 => Left("Unable to map port")
+        case newPort: Int => Right(new InetSocketAddress(externalAddress.get.getHostAddress, newPort))
       }
-    case None => Left("No external address")
-  }
+    else Left("No external or local address")
 
   def deletePort(port: Int): Try[Unit] =
     Try {
@@ -66,5 +63,15 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
     }.recover {
       case t: Throwable =>
         log.error("Unable to delete mapping for port " + port + ": " + t.toString)
+    }
+
+  def portMapping(address: InetAddress, externalPort: Int, internalPort: Int, acc: Int): Int =
+    if (acc == 0)
+      0
+    else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Scorex"))
+      externalPort
+    else {
+      val newPort = scala.util.Random.nextInt(55536) + 10000
+      portMapping(address, newPort, newPort, acc - 1)
     }
 }
