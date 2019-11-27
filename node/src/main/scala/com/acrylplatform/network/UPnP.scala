@@ -4,7 +4,7 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import com.acrylplatform.settings.UPnPSettings
 import com.acrylplatform.utils.ScorexLogging
-import org.bitlet.weupnp.{GatewayDevice, GatewayDiscover}
+import org.bitlet.weupnp.{GatewayDevice, GatewayDiscover, PortMappingEntry}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -65,13 +65,15 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
         log.error("Unable to delete mapping for port " + port + ": " + t.toString)
     }
 
-  def portMapping(address: InetAddress, externalPort: Int, internalPort: Int, acc: Int): Int =
+  def portMapping(address: InetAddress, externalPort: Int, internalPort: Int, acc: Int): Int = {
+    val newPort = scala.util.Random.nextInt(55536) + 10000
     if (acc == 0)
       0
+    else if (gateway.get.getSpecificPortMappingEntry(externalPort, "TCP", new PortMappingEntry()))
+      portMapping(address, newPort, newPort, acc - 1)
     else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Scorex"))
       externalPort
-    else {
-      val newPort = scala.util.Random.nextInt(55536) + 10000
+    else
       portMapping(address, newPort, newPort, acc - 1)
-    }
+  }
 }
