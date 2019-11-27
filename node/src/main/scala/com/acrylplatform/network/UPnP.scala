@@ -48,10 +48,9 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
   def addPort(port: Int): Either[String, InetSocketAddress] =
     if (externalAddress.nonEmpty && localAddress.nonEmpty)
       portMapping(localAddress.get, port, port, 20) match {
-        case 0 => Left("Unable to map port")
+        case 0            => Left("Unable to map port")
         case newPort: Int => Right(new InetSocketAddress(externalAddress.get.getHostAddress, newPort))
-      }
-    else Left("No external or local address")
+      } else Left("No external or local address")
 
   def deletePort(port: Int): Try[Unit] =
     Try {

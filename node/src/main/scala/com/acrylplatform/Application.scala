@@ -361,7 +361,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         log.info("Delete UPnP port")
         externalAddressNode match {
           case Some(address) => upnp.deletePort(address.getPort)
-          case None =>
+          case None          =>
         }
       }
 
