@@ -144,6 +144,7 @@ object Dependencies {
       jacksonModule("core", "databind"),
       jacksonModuleScala,
       akkaHttp,
+      akkaHttpModule("akka-http2-support"),
       "org.bitlet" % "weupnp" % "0.1.4",
       akkaModule("persistence"),
       akkaModule("slf4j"),
