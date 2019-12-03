@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.Http2
+import akka.http.scaladsl.ConnectionContext
 import akka.stream.ActorMaterializer
 import cats.instances.all._
 import com.typesafe.config._
@@ -24,7 +26,7 @@ import com.acrylplatform.db.openDB
 import com.acrylplatform.extensions.{Context, Extension}
 import com.acrylplatform.features.api.ActivationApiRoute
 import com.acrylplatform.history.StorageFactory
-import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute}
+import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute, SSLConnection}
 import com.acrylplatform.metrics.Metrics
 import com.acrylplatform.mining.{Miner, MinerImpl}
 import com.acrylplatform.network.RxExtensionLoader.RxExtensionLoaderShutdownHook
@@ -308,9 +310,15 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         classOf[LeaseApiRoute],
         classOf[AliasApiRoute]
       )
-
-      val combinedRoute = CompositeHttpService(apiTypes, apiRoutes, settings.restAPISettings)(actorSystem).loggingCompositeRoute
-      val httpFuture    = Http().bindAndHandle(combinedRoute, settings.restAPISettings.bindAddress, settings.restAPISettings.port)
+      val asyncHandler = CompositeHttpService(apiTypes, apiRoutes, settings.restAPISettings)(actorSystem).asyncHandler
+      val httpFuture = SSLConnection.getSSL(settings.restAPISettings) match {
+        case Left(message) =>
+          log.debug(message)
+          Http2().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, ConnectionContext.noEncryption())
+        case Right(https) =>
+          log.debug("HTTPS enable")
+          Http().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, https)
+      }
       serverBinding = Await.result(httpFuture, 20.seconds)
       log.info(s"REST API was bound on ${settings.restAPISettings.bindAddress}:${settings.restAPISettings.port}")
     }
