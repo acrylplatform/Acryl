@@ -15,6 +15,9 @@ class RestAPISettingsSpecification extends FlatSpec with Matchers {
                                                |    port: 6869
                                                |    api-key-hash: "BASE58APIKEYHASH"
                                                |    cors: yes
+                                               |    https: no
+                                               |    https-password: "password"
+                                               |    certificate-file: "/tmp/crt"
                                                |    api-key-different-host: yes
                                                |    transactions-by-address-limit = 10000
                                                |    distribution-address-limit = 10000
@@ -30,6 +33,9 @@ class RestAPISettingsSpecification extends FlatSpec with Matchers {
     settings.port should be(6869)
     settings.apiKeyHash should be("BASE58APIKEYHASH")
     settings.cors should be(true)
+    settings.https should be(false)
+    settings.httpsPassword should be("password")
+    settings.certificateFile should be("/tmp/crt")
     settings.apiKeyDifferentHost should be(true)
     settings.transactionsByAddressLimit shouldBe 10000
     settings.distributionAddressLimit shouldBe 10000

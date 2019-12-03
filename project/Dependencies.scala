@@ -4,9 +4,9 @@ import sbt._
 
 object Dependencies {
 
-  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.20"
+  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.23"
 
-  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.8"
+  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.10"
   private def nettyModule(module: String)                  = "io.netty"                      % s"netty-$module"   % "4.1.33.Final"
   private def kamonModule(module: String, v: String)       = "io.kamon"                      %% s"kamon-$module"  % v
   private def jacksonModule(group: String, module: String) = s"com.fasterxml.jackson.$group" % s"jackson-$module" % "2.9.8"
@@ -140,10 +140,12 @@ object Dependencies {
       "com.typesafe.play"        %% "play-json"     % "2.7.1",
       "org.ethereum"             % "leveldbjni-all" % "1.18.3",
       // "io.swagger"                   %% "swagger-scala-module" % "1.0.4",
-      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.0.0",
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0",
+      "javax.xml.bind"               % "jaxb-api"           % "2.3.1", // javax.xml.bind replacement for jackson in swagger
       jacksonModule("core", "databind"),
       jacksonModuleScala,
       akkaHttp,
+      akkaHttpModule("akka-http2-support"),
       "org.bitlet" % "weupnp" % "0.1.4",
       akkaModule("persistence"),
       akkaModule("slf4j"),
@@ -152,7 +154,7 @@ object Dependencies {
       nettyModule("handler"),
       akkaModule("testkit")               % Test,
       akkaHttpModule("akka-http-testkit") % Test,
-      ("org.iq80.leveldb" % "leveldb" % "0.9").exclude("com.google.guava", "guava") % Test
+      ("org.iq80.leveldb" % "leveldb" % "0.12").exclude("com.google.guava", "guava") % Test
     ) ++ protobuf.value ++ test ++ console
   )
 
