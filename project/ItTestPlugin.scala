@@ -31,7 +31,7 @@ object ItTestPlugin extends AutoPlugin {
            * F - show full stack traces
            * W - without color
            */
-          val args        = Seq("-fFW", (logDirectory.value / "summary.log").toString) ++ excludeTags
+          val args = Seq("-fFW", (logDirectory.value / "summary.log").toString) ++ excludeTags
           Tests.Argument(TestFrameworks.ScalaTest, args: _*)
         },
         parallelExecution in Test := true,
@@ -62,7 +62,7 @@ object ItTestPlugin extends AutoPlugin {
                   runJVMOptions = Vector(
                     "-Dacryl.it.logging.appender=FILE",
                     s"-Dacryl.it.logging.dir=${logDirectoryValue / suite.name.replaceAll("""(\w)\w*\.""", "$1.")}" // foo.bar.Baz -> f.b.Baz
-                  ) ++ javaOptionsValue ++ ModernJavaSettings.options,
+                  ) ++ javaOptionsValue,
                   connectInput = false,
                   envVars = envVarsValue
                 ))
