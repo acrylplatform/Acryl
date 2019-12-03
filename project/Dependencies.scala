@@ -4,9 +4,9 @@ import sbt._
 
 object Dependencies {
 
-  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.20"
+  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.23"
 
-  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.8"
+  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.10"
   private def nettyModule(module: String)                  = "io.netty"                      % s"netty-$module"   % "4.1.33.Final"
   private def kamonModule(module: String, v: String)       = "io.kamon"                      %% s"kamon-$module"  % v
   private def jacksonModule(group: String, module: String) = s"com.fasterxml.jackson.$group" % s"jackson-$module" % "2.9.8"
