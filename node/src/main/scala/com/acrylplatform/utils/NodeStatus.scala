@@ -2,7 +2,7 @@ package com.acrylplatform.utils
 
 import java.io.File
 import java.lang.management.ManagementFactory.getRuntimeMXBean
-import java.net.InetAddress
+import java.net.{InetAddress, URL}
 
 import com.acrylplatform.account.Address
 import com.acrylplatform.network.NS
@@ -11,6 +11,7 @@ import com.acrylplatform.wallet.Wallet
 import com.acrylplatform.Version
 import monix.execution.{Cancelable, Scheduler}
 import monix.execution.schedulers.SchedulerService
+import play.api.libs.json._
 
 import scala.concurrent.duration._
 import scala.io.Source
@@ -35,7 +36,14 @@ object NodeStatus extends ScorexLogging {
 
         def syncStatus: String = {
           val heightLocal  = blockchain.height
-          val heightRemote = 1000000 // TODO: Get remote node
+
+          val heightRemote = Try {
+            val json = Json.parse(get("https://nodes.acrylplatform.com/blocks/height"))
+            (json \ "height").get.toString()
+          } match {
+            case Success(value) => value.toInt
+            case Failure(_) => 0
+          }
 
           if (heightRemote != heightLocal)
             s"($heightLocal/$heightRemote)"
@@ -73,7 +81,13 @@ object NodeStatus extends ScorexLogging {
           case None        => "Unknown"
         }
 
-        val remoteVersion = "Unknown"
+        val remoteVersion = Try {
+          val json = Json.parse(get("https://nodes.acrylplatform.com/node/version"))
+          (json \ "version").get.toString()
+        } match {
+          case Success(value) => value
+          case Failure(_) => "Unknown"
+        }
 
         val version = Version.VersionString + " " + s"($remoteVersion)"
 
@@ -97,4 +111,16 @@ object NodeStatus extends ScorexLogging {
       }
 
   def stop(): Unit = scheduler.shutdown()
+
+  private def get(url: String): String = {
+    val requestProperties = Map(
+      "User-Agent" -> "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)"
+    )
+    val connection = new URL(url).openConnection
+    requestProperties.foreach({
+      case (name, value) => connection.setRequestProperty(name, value)
+    })
+
+    Source.fromInputStream(connection.getInputStream).getLines.mkString("\n")
+  }
 }
