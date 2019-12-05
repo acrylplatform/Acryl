@@ -317,7 +317,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
     extensions.foreach(_.start())
 
-    NodeStatus.start(settings.nodeStatus, blockchainUpdater, wallet, network)
+    NodeStatus.start(settings.nodeStatus, blockchainUpdater, wallet, network, upnp.localAddress)
 
     // on unexpected shutdown
     sys.addShutdownHook {
