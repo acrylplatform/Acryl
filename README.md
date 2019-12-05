@@ -72,6 +72,8 @@ sbt packageAll
 sbt -Dnetwork=testnet packageAll
 ```
 
+Files will be located in `/target/release`
+
 ## 6. Installing DEB package
 
 DEB package located in target folder. You can replace '*' with actual package name:
