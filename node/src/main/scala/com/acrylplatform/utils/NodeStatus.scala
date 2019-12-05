@@ -9,8 +9,7 @@ import com.acrylplatform.network.NS
 import com.acrylplatform.state.Blockchain
 import com.acrylplatform.wallet.Wallet
 import com.acrylplatform.Version
-import monix.eval.Task
-import monix.execution.{Cancelable, CancelableFuture, Scheduler}
+import monix.execution.{Cancelable, Scheduler}
 import monix.execution.schedulers.SchedulerService
 
 import scala.concurrent.duration._
@@ -18,13 +17,10 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object NodeStatus extends ScorexLogging {
-  private implicit val scheduler: SchedulerService = Scheduler.singleThread("node-status")
+  val scheduler: SchedulerService = Scheduler.io("NodeStatus")
 
-  def start(enable: Boolean, blockchain: Blockchain, wallet: Wallet, network: NS, localAddress: Option[InetAddress]): CancelableFuture[Cancelable] =
-    Task {
-      // TODO: Disable logger
-      val scheduler = Scheduler.io("NodeStatus")
-      scheduler.scheduleAtFixedRate(0.seconds, 120.seconds) {
+  def start(enable: Boolean, blockchain: Blockchain, wallet: Wallet, network: NS, localAddress: Option[InetAddress]): Cancelable =
+    scheduler.scheduleAtFixedRate(0.seconds, 120.seconds) {
         val pid = getRuntimeMXBean.getName.split("@")(0)
 
         def networkConnectionStatus: String =
@@ -99,5 +95,6 @@ object NodeStatus extends ScorexLogging {
                    |Message generated on $currentTimestamp
                    |""".stripMargin)
       }
-    }.runAsyncLogErr
+
+  def stop(): Unit = scheduler.shutdown()
 }

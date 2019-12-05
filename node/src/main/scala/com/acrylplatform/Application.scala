@@ -366,6 +366,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       blockchainUpdater.shutdown()
       rxExtensionLoaderShutdown.foreach(_.shutdown())
 
+      NodeStatus.stop()
+
       log.info("Stopping network services")
       network.shutdown()
 
