@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 object NodeStatus extends ScorexLogging {
   val scheduler: SchedulerService = Scheduler.io("NodeStatus")
 
-  def start(enable: Boolean, blockchain: Blockchain, wallet: Wallet, network: NS, localAddress: Option[InetAddress]): Cancelable =
+  def start(blockchain: Blockchain, wallet: Wallet, network: NS, localAddress: Option[InetAddress]): Cancelable =
     scheduler.scheduleAtFixedRate(0.seconds, 120.seconds) {
       val pid = getRuntimeMXBean.getName.split("@")(0)
 

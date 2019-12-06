@@ -317,7 +317,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
     extensions.foreach(_.start())
 
-    NodeStatus.start(settings.nodeStatus, blockchainUpdater, wallet, network, upnp.localAddress)
+    if (settings.nodeStatus) NodeStatus.start(blockchainUpdater, wallet, network, upnp.localAddress)
 
     // on unexpected shutdown
     sys.addShutdownHook {
@@ -366,7 +366,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       blockchainUpdater.shutdown()
       rxExtensionLoaderShutdown.foreach(_.shutdown())
 
-      NodeStatus.stop()
+      if (settings.nodeStatus) NodeStatus.stop()
 
       log.info("Stopping network services")
       network.shutdown()
