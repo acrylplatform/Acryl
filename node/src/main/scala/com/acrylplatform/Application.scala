@@ -35,7 +35,7 @@ import com.acrylplatform.settings.AcrylSettings
 import com.acrylplatform.state.Blockchain
 import com.acrylplatform.state.appender.{BlockAppender, ExtensionAppender, MicroblockAppender}
 import com.acrylplatform.transaction.{Asset, Transaction}
-import com.acrylplatform.utils.{LoggerFacade, NTP, ScorexLogging, SystemInformationReporter, Time, UtilApp}
+import com.acrylplatform.utils.{LoggerFacade, NTP, NodeStatus, ScorexLogging, SystemInformationReporter, Time, UtilApp}
 import com.acrylplatform.utx.{UtxPool, UtxPoolImpl}
 import com.acrylplatform.wallet.Wallet
 import io.netty.channel.Channel
@@ -325,6 +325,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
     extensions.foreach(_.start())
 
+    if (settings.nodeStatus) NodeStatus.start(blockchainUpdater, wallet, network, upnp.localAddress)
+
     // on unexpected shutdown
     sys.addShutdownHook {
       Await.ready(Kamon.stopAllReporters(), 20.seconds)
@@ -372,6 +374,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       blockchainUpdater.shutdown()
       rxExtensionLoaderShutdown.foreach(_.shutdown())
 
+      if (settings.nodeStatus) NodeStatus.stop()
+
       log.info("Stopping network services")
       network.shutdown()
 
@@ -408,6 +412,12 @@ object Application {
 
     // DO NOT LOG BEFORE THIS LINE, THIS PROPERTY IS USED IN logback.xml
     System.setProperty("acryl.directory", config.getString("acryl.directory"))
+    if (config.getBoolean("acryl.node-status")) {
+      System.setProperty("acryl.stdout.enabled", "false")
+      //noinspection ScalaStyle
+      println("Starting...")
+    } else
+      System.setProperty("acryl.stdout.enabled", "true")
 
     val settings = AcrylSettings.fromRootConfig(config)
 

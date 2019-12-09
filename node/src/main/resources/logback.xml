@@ -25,7 +25,7 @@
     <root level="TRACE"/>
 
     <property name="logback.file.enabled" value="true"/>
-    <property name="logback.stdout.enabled" value="true"/>
+    <property name="logback.stdout.enabled" value="${acryl.stdout.enabled}"/>
 
     <include optional="true" file="${acryl.config.directory:-.}/logback.xml"/>
 
