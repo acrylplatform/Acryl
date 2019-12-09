@@ -404,6 +404,12 @@ object Application {
 
     // DO NOT LOG BEFORE THIS LINE, THIS PROPERTY IS USED IN logback.xml
     System.setProperty("acryl.directory", config.getString("acryl.directory"))
+    if (config.getBoolean("acryl.node-status")) {
+      System.setProperty("acryl.stdout.enabled", "false")
+      //noinspection ScalaStyle
+      println("Starting...")
+    } else
+      System.setProperty("acryl.stdout.enabled", "true")
 
     val settings = AcrylSettings.fromRootConfig(config)
 
