@@ -27,7 +27,11 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
       case Failure(_)     => "Unknown"
     }
 
-    if (ipUPnP == ipService) Option(InetAddress.getByName(ipUPnP)) else Option(InetAddress.getByName(ipService))
+    if (ipUPnP == "Unknown" && ipService == "Unknown") None
+    else if (ipService == "Unknown") Option(InetAddress.getByName(ipUPnP))
+    else if (ipUPnP == "Unknown") Option(InetAddress.getByName(ipService))
+    else if (ipUPnP == ipService) Option(InetAddress.getByName(ipUPnP))
+    else Option(InetAddress.getByName(ipService))
   }
 
   Try {
