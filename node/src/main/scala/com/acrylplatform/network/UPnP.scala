@@ -15,19 +15,19 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
 
   lazy val localAddress: Option[InetAddress] = gateway.map(_.getLocalAddress)
   lazy val externalAddress: Option[InetAddress] = {
-    val upnpIP = gateway.map(_.getExternalIPAddress).map(InetAddress.getByName) match {
+    val ipUPnP = gateway.map(_.getExternalIPAddress).map(InetAddress.getByName) match {
       case Some(value) => value.getHostAddress
       case None        => "Unknown"
     }
 
-    val ipify = Try {
+    val ipService = Try {
       scala.io.Source.fromURL("https://api.ipify.org/?format=txt")
     } match {
       case Success(value) => value.mkString
       case Failure(_)     => "Unknown"
     }
 
-    if (upnpIP == ipify) Option(InetAddress.getByName(upnpIP)) else Option(InetAddress.getByName(ipify))
+    if (ipUPnP == ipService) Option(InetAddress.getByName(ipUPnP)) else Option(InetAddress.getByName(ipService))
   }
 
   Try {
