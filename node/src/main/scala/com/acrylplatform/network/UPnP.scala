@@ -7,14 +7,28 @@ import com.acrylplatform.utils.ScorexLogging
 import org.bitlet.weupnp.{GatewayDevice, GatewayDiscover, PortMappingEntry}
 
 import scala.collection.JavaConverters._
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class UPnP(settings: UPnPSettings) extends ScorexLogging {
 
   private var gateway: Option[GatewayDevice] = None
 
-  lazy val localAddress: Option[InetAddress]    = gateway.map(_.getLocalAddress)
-  lazy val externalAddress: Option[InetAddress] = gateway.map(_.getExternalIPAddress).map(InetAddress.getByName)
+  lazy val localAddress: Option[InetAddress] = gateway.map(_.getLocalAddress)
+  lazy val externalAddress: Option[InetAddress] = {
+    val upnpIP = gateway.map(_.getExternalIPAddress).map(InetAddress.getByName) match {
+      case Some(value) => value.getHostAddress
+      case None        => "Unknown"
+    }
+
+    val ipify = Try {
+      scala.io.Source.fromURL("https://api.ipify.org/?format=txt")
+    } match {
+      case Success(value) => value.mkString
+      case Failure(_)     => "Unknown"
+    }
+
+    if (upnpIP == ipify) Option(InetAddress.getByName(upnpIP)) else Option(InetAddress.getByName(ipify))
+  }
 
   Try {
     log.info("Looking for UPnP gateway device...")
