@@ -122,13 +122,15 @@ class PeerDatabaseImpl(settings: NetworkSettings) extends PeerDatabase with Scor
   }
 
   override def close(): Unit = settings.file.foreach { f =>
-    log.info(s"Saving ${knownPeers.size} known peer(s) to ${f.getName}")
-    val rawPeers = for {
-      inetAddress <- knownPeers.keySet
-      address     <- Option(inetAddress.getAddress)
-    } yield s"${address.getHostAddress}:${inetAddress.getPort}"
+    if (settings.savingPeers) {
+      log.info(s"Saving ${knownPeers.size} known peer(s) to ${f.getName}")
+      val rawPeers = for {
+        inetAddress <- knownPeers.keySet
+        address     <- Option(inetAddress.getAddress)
+      } yield s"${address.getHostAddress}:${inetAddress.getPort}"
 
-    JsonFileStorage.save[PeersPersistenceType](rawPeers, f.getCanonicalPath)
+      JsonFileStorage.save[PeersPersistenceType](rawPeers, f.getCanonicalPath)
+    }
   }
 
   override def blacklistAndClose(channel: Channel, reason: String): Unit = getRemoteAddress(channel).foreach { x =>

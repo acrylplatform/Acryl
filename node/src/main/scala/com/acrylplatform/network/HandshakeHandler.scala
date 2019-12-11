@@ -3,6 +3,7 @@ package com.acrylplatform.network
 import java.util
 import java.util.concurrent.{ConcurrentMap, TimeUnit}
 
+import com.acrylplatform.Version
 import com.acrylplatform.network.Handshake.InvalidHandshakeException
 import com.acrylplatform.utils.ScorexLogging
 import io.netty.buffer.ByteBuf
@@ -82,7 +83,7 @@ abstract class HandshakeHandler(localHandshake: Handshake,
     case HandshakeTimeoutExpired =>
       peerDatabase.blacklistAndClose(ctx.channel(), "Timeout expired while waiting for handshake")
     case remoteHandshake: Handshake =>
-      if (!checkApplicationName(localHandshake.applicationName, remoteHandshake.applicationName)) // TODO : during the transition
+      if (!checkApplicationName(localHandshake.applicationName, remoteHandshake.applicationName))
         peerDatabase.blacklistAndClose(
           ctx.channel(),
           s"Remote application name ${remoteHandshake.applicationName} does not match local ${localHandshake.applicationName}")
@@ -135,7 +136,7 @@ object HandshakeHandler extends ScorexLogging {
   val NodeNameAttributeKey: AttributeKey[String]      = AttributeKey.newInstance[String]("name")
 
   def versionIsSupported(remoteVersion: (Int, Int, Int)): Boolean =
-    (remoteVersion._1 == 0 && remoteVersion._2 >= 13) || (remoteVersion._1 == 1 && remoteVersion._2 >= 0)
+    (Version.VersionTuple._1 - remoteVersion._1 == 0) && (Version.VersionTuple._2 - remoteVersion._2 <= 13)
 
   // TODO : during the transition
   def checkApplicationName(local: String, remote: String): Boolean = {

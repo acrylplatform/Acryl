@@ -97,6 +97,33 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
   private var extensions = Seq.empty[Extension]
 
+  private lazy val externalAddressNode: Option[InetSocketAddress] =
+    settings.networkSettings.declaredAddress match {
+      case Some(address) =>
+        upnp.addPort(address.getPort) match {
+          case Left(string) =>
+            log.error(string)
+            Option(address)
+          case Right(externalAddr) =>
+            if (externalAddr != address) {
+              log.debug("Mapped port [" + address.getAddress.getHostAddress + "]:" + address.getPort)
+              Option(new InetSocketAddress(address.getAddress, externalAddr.getPort))
+            } else {
+              log.debug("Mapped port [" + externalAddr.getAddress.getHostAddress + "]:" + externalAddr.getPort)
+              Option(externalAddr)
+            }
+        }
+      case None =>
+        upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
+          case Left(string) =>
+            log.error(string)
+            None
+          case Right(externalAddr) =>
+            log.debug("Mapped port [" + externalAddr.getAddress.getHostAddress + "]:" + externalAddr.getPort)
+            Option(externalAddr)
+        }
+    }
+
   def apiShutdown(): Unit = {
     for {
       u <- maybeUtx
@@ -148,22 +175,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
     val networkSettingsCopy =
       if (settings.networkSettings.uPnPSettings.enable)
         settings.networkSettings.copy(
-          declaredAddress = settings.networkSettings.declaredAddress match {
-            case Some(address) =>
-              for (addr <- settings.networkSettings.declaredAddress)
-                upnp.addPort(addr.getPort) match {
-                  case Left(address) => log.debug("Mapped port [" + address + "]:" + addr.getPort)
-                  case Right(string) => log.error(string)
-                }
-              Option(address)
-            case None =>
-              upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
-                case Left(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
-                case Right(string) =>
-                  log.error(string)
-                  None
-              }
-          }
+          declaredAddress = externalAddressNode
         )
       else
         settings.networkSettings.copy()
@@ -355,14 +367,12 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       if (settings.restAPISettings.enable)
         Try(Await.ready(serverBinding.unbind(), 2.minutes)).failed.map(e => log.error("Failed to unbind REST API port", e))
 
-      settings.networkSettings.declaredAddress match {
-        case Some(_) =>
-          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-            upnp.deletePort(addr.getPort)
-          }
-        case None =>
-          if (settings.networkSettings.uPnPSettings.enable)
-            upnp.deletePort(settings.networkSettings.bindAddress.getPort)
+      if (settings.networkSettings.uPnPSettings.enable) {
+        log.info("Delete UPnP port")
+        externalAddressNode match {
+          case Some(address) => upnp.deletePort(address.getPort)
+          case None          =>
+        }
       }
 
       log.debug("Closing peer database")

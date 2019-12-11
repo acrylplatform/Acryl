@@ -22,6 +22,7 @@ case class NetworkSettings(file: Option[File],
                            nodeName: String,
                            nonce: Long,
                            knownPeers: Seq[String],
+                           savingPeers: Boolean,
                            peersDataResidenceTime: FiniteDuration,
                            blackListResidenceTime: FiniteDuration,
                            breakIdleConnectionsTimeout: FiniteDuration,
@@ -65,6 +66,7 @@ object NetworkSettings {
 
     val dockerIpAddress              = config.as[String]("docker-ip-address")
     val knownPeers                   = config.as[Seq[String]]("known-peers")
+    val savingPeers                  = config.as[Boolean]("saving-peers")
     val peersDataResidenceTime       = config.as[FiniteDuration]("peers-data-residence-time")
     val blackListResidenceTime       = config.as[FiniteDuration]("black-list-residence-time")
     val breakIdleConnectionsTimeout  = config.as[FiniteDuration]("break-idle-connections-timeout")
@@ -90,6 +92,7 @@ object NetworkSettings {
       nodeName,
       nonce,
       knownPeers,
+      savingPeers,
       peersDataResidenceTime,
       blackListResidenceTime,
       breakIdleConnectionsTimeout,
