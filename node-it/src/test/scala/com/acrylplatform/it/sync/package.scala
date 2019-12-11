@@ -40,6 +40,7 @@ package object sync {
 
   val supportedVersions: List[Byte] = List(1, 2)
 
+  //noinspection ScalaDeprecation
   val script: Script       = ScriptCompiler(s"""true""".stripMargin, isAssetScript = false).explicitGet()._1
   val scriptBase64: String = script.bytes.value.base64
 

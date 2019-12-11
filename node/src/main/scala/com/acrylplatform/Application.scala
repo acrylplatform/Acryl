@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.Http2
+import akka.http.scaladsl.ConnectionContext
 import akka.stream.ActorMaterializer
 import cats.instances.all._
 import com.typesafe.config._
@@ -24,7 +26,7 @@ import com.acrylplatform.db.openDB
 import com.acrylplatform.extensions.{Context, Extension}
 import com.acrylplatform.features.api.ActivationApiRoute
 import com.acrylplatform.history.StorageFactory
-import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute}
+import com.acrylplatform.http.{AcrylApiRoute, DebugApiRoute, NodeApiRoute, SSLConnection}
 import com.acrylplatform.metrics.Metrics
 import com.acrylplatform.mining.{Miner, MinerImpl}
 import com.acrylplatform.network.RxExtensionLoader.RxExtensionLoaderShutdownHook
@@ -33,7 +35,7 @@ import com.acrylplatform.settings.AcrylSettings
 import com.acrylplatform.state.Blockchain
 import com.acrylplatform.state.appender.{BlockAppender, ExtensionAppender, MicroblockAppender}
 import com.acrylplatform.transaction.{Asset, Transaction}
-import com.acrylplatform.utils.{LoggerFacade, NTP, ScorexLogging, SystemInformationReporter, Time, UtilApp}
+import com.acrylplatform.utils.{LoggerFacade, NTP, NodeStatus, ScorexLogging, SystemInformationReporter, Time, UtilApp}
 import com.acrylplatform.utx.{UtxPool, UtxPoolImpl}
 import com.acrylplatform.wallet.Wallet
 import io.netty.channel.Channel
@@ -95,6 +97,33 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
   private var extensions = Seq.empty[Extension]
 
+  private lazy val externalAddressNode: Option[InetSocketAddress] =
+    settings.networkSettings.declaredAddress match {
+      case Some(address) =>
+        upnp.addPort(address.getPort) match {
+          case Left(string) =>
+            log.error(string)
+            Option(address)
+          case Right(externalAddr) =>
+            if (externalAddr != address) {
+              log.debug("Mapped port [" + address.getAddress.getHostAddress + "]:" + address.getPort)
+              Option(new InetSocketAddress(address.getAddress, externalAddr.getPort))
+            } else {
+              log.debug("Mapped port [" + externalAddr.getAddress.getHostAddress + "]:" + externalAddr.getPort)
+              Option(externalAddr)
+            }
+        }
+      case None =>
+        upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
+          case Left(string) =>
+            log.error(string)
+            None
+          case Right(externalAddr) =>
+            log.debug("Mapped port [" + externalAddr.getAddress.getHostAddress + "]:" + externalAddr.getPort)
+            Option(externalAddr)
+        }
+    }
+
   def apiShutdown(): Unit = {
     for {
       u <- maybeUtx
@@ -146,22 +175,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
     val networkSettingsCopy =
       if (settings.networkSettings.uPnPSettings.enable)
         settings.networkSettings.copy(
-          declaredAddress = settings.networkSettings.declaredAddress match {
-            case Some(address) =>
-              for (addr <- settings.networkSettings.declaredAddress)
-                upnp.addPort(addr.getPort) match {
-                  case Left(address) => log.debug("Mapped port [" + address + "]:" + addr.getPort)
-                  case Right(string) => log.error(string)
-                }
-              Option(address)
-            case None =>
-              upnp.addPort(settings.networkSettings.bindAddress.getPort) match {
-                case Left(address) => Option(new InetSocketAddress(address.getHostAddress, settings.networkSettings.bindAddress.getPort))
-                case Right(string) =>
-                  log.error(string)
-                  None
-              }
-          }
+          declaredAddress = externalAddressNode
         )
       else
         settings.networkSettings.copy()
@@ -308,14 +322,22 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
         classOf[LeaseApiRoute],
         classOf[AliasApiRoute]
       )
-
-      val combinedRoute = CompositeHttpService(apiTypes, apiRoutes, settings.restAPISettings)(actorSystem).loggingCompositeRoute
-      val httpFuture    = Http().bindAndHandle(combinedRoute, settings.restAPISettings.bindAddress, settings.restAPISettings.port)
+      val asyncHandler = CompositeHttpService(apiTypes, apiRoutes, settings.restAPISettings)(actorSystem).asyncHandler
+      val httpFuture = SSLConnection.getSSL(settings.restAPISettings) match {
+        case Left(message) =>
+          log.debug(message)
+          Http2().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, ConnectionContext.noEncryption())
+        case Right(https) =>
+          log.debug("HTTPS enable")
+          Http().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, https)
+      }
       serverBinding = Await.result(httpFuture, 20.seconds)
       log.info(s"REST API was bound on ${settings.restAPISettings.bindAddress}:${settings.restAPISettings.port}")
     }
 
     extensions.foreach(_.start())
+
+    if (settings.nodeStatus) NodeStatus.start(blockchainUpdater, wallet, network, upnp.localAddress)
 
     // on unexpected shutdown
     sys.addShutdownHook {
@@ -345,14 +367,12 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       if (settings.restAPISettings.enable)
         Try(Await.ready(serverBinding.unbind(), 2.minutes)).failed.map(e => log.error("Failed to unbind REST API port", e))
 
-      settings.networkSettings.declaredAddress match {
-        case Some(_) =>
-          for (addr <- settings.networkSettings.declaredAddress if settings.networkSettings.uPnPSettings.enable) {
-            upnp.deletePort(addr.getPort)
-          }
-        case None =>
-          if (settings.networkSettings.uPnPSettings.enable)
-            upnp.deletePort(settings.networkSettings.bindAddress.getPort)
+      if (settings.networkSettings.uPnPSettings.enable) {
+        log.info("Delete UPnP port")
+        externalAddressNode match {
+          case Some(address) => upnp.deletePort(address.getPort)
+          case None          =>
+        }
       }
 
       log.debug("Closing peer database")
@@ -363,6 +383,8 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
 
       blockchainUpdater.shutdown()
       rxExtensionLoaderShutdown.foreach(_.shutdown())
+
+      if (settings.nodeStatus) NodeStatus.stop()
 
       log.info("Stopping network services")
       network.shutdown()
@@ -400,6 +422,12 @@ object Application {
 
     // DO NOT LOG BEFORE THIS LINE, THIS PROPERTY IS USED IN logback.xml
     System.setProperty("acryl.directory", config.getString("acryl.directory"))
+    if (config.getBoolean("acryl.node-status")) {
+      System.setProperty("acryl.stdout.enabled", "false")
+      //noinspection ScalaStyle
+      println("Starting...")
+    } else
+      System.setProperty("acryl.stdout.enabled", "true")
 
     val settings = AcrylSettings.fromRootConfig(config)
 

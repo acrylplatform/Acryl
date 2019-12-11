@@ -62,6 +62,10 @@ class ClientSpec extends FreeSpec with Matchers with MockFactory with Transactio
     HandshakeHandler.checkApplicationName("wavesA", "wavesK") shouldBe false
   }
 
+  "should not match supported version of the application" in {
+    HandshakeHandler.versionIsSupported((0, 15, 5)) shouldBe false
+  }
+
   private def createEmbeddedChannel(allChannels: ChannelGroup) = new EmbeddedChannel(
     new HandshakeDecoder(PeerDatabase.NoOp),
     new HandshakeTimeoutHandler(1.minute),

@@ -6,8 +6,14 @@
    2. You've checked "Make project before run"
  */
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
+
+import Hashes.mk
+import org.apache.commons.codec.binary.Hex
 import sbt.Keys._
 import sbt._
+import sbt.io.Using
 import sbt.internal.inc.ReflectUtilities
 import sbtcrossproject.CrossPlugin.autoImport.crossProject
 
@@ -176,10 +182,41 @@ packageAll := Def
   .sequential(
     root / cleanAll,
     Def.task {
-      (node / assembly).value
-      (node / Debian / packageBin).value
-      (`grpc-server` / Universal / packageZipTarball).value
-      (`grpc-server` / Debian / packageBin).value
+      val artifacts = Seq(
+        (node / assembly).value,
+        (node / Debian / packageBin).value,
+        (`grpc-server` / Universal / packageZipTarball).value,
+        (`grpc-server` / Debian / packageBin).value
+      )
+
+      val destDir = ((root / target).value / "release").toPath
+      Files.createDirectories(destDir)
+
+      val hashes = artifacts.map { file =>
+        val xs = Using.fileInputStream(file)(mk("SHA-256", _))
+        file.toPath.getFileName.toString -> Hex.encodeHexString(xs)
+      }
+
+      // takeWhile to sort network builds
+      val sortedHashes = hashes
+        .sortBy { case (fileName, _) => (fileName.takeWhile(x => !x.isDigit).length, fileName) }
+
+      val content =
+        s"""## SHA256 Checksums
+           |
+           |```
+           |${sortedHashes.map { case (fileName, hash) => s"$hash $fileName" }.mkString("\n")}
+           |```
+           |""".stripMargin
+
+      val releaseNotesFile = destDir.resolve("checksums.md").toFile
+      IO.write(releaseNotesFile, content, StandardCharsets.UTF_8)
+
+      artifacts
+        .map(_.toPath)
+        .foreach { source =>
+          Files.move(source, destDir.resolve(source.getFileName))
+        }
     }
   )
   .value

@@ -2,10 +2,10 @@ package com.acrylplatform.it.api
 
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.util.UUID
 import java.util.concurrent.TimeoutException
+import java.util.{NoSuchElementException, UUID}
 
-import com.acrylplatform.api.http.assets._
+import com.acrylplatform.api.http.assets.{ReissueV1Request, SignedIssueV1Request, SignedIssueV2Request, SignedTransferV2Request, TransferV1Request}
 import com.acrylplatform.api.http.{AddressApiRoute, ConnectReq}
 import com.acrylplatform.common.utils.EitherExt2
 import com.acrylplatform.features.api.ActivationStatus
@@ -41,6 +41,7 @@ import scala.util.{Failure, Success}
 
 object AsyncHttpApi extends Assertions {
 
+  //noinspection ScalaStyle
   implicit class NodeAsyncHttpApi(val n: Node) extends Assertions with Matchers {
 
     def get(path: String, f: RequestBuilder => RequestBuilder = identity): Future[Response] =
@@ -231,7 +232,8 @@ object AsyncHttpApi extends Assertions {
           "version"    -> version,
           "assetId"    -> { if (assetId.isDefined) JsString(assetId.get) else JsNull },
           "feeAssetId" -> { if (feeAssetId.isDefined) JsString(feeAssetId.get) else JsNull }
-        ))
+        )
+      )
     }
 
     def payment(sourceAddress: String, recipient: String, amount: Long, fee: Long): Future[Transaction] =
@@ -246,7 +248,8 @@ object AsyncHttpApi extends Assertions {
           "recipient" -> recipient,
           "fee"       -> fee,
           "version"   -> version
-        ))
+        )
+      )
     }
 
     def cancelLease(sourceAddress: String, leaseId: String, fee: Long, version: Byte = 2): Future[Transaction] = {
@@ -257,7 +260,8 @@ object AsyncHttpApi extends Assertions {
           "txId"    -> leaseId,
           "fee"     -> fee,
           "version" -> version
-        ))
+        )
+      )
     }
 
     def activeLeases(sourceAddress: String): Future[Seq[Transaction]] = get(s"/leasing/active/$sourceAddress").as[Seq[Transaction]]
@@ -296,7 +300,8 @@ object AsyncHttpApi extends Assertions {
           "sender"  -> sender,
           "fee"     -> fee,
           "script"  -> { if (script.isDefined) JsString(script.get) else JsNull }
-        ))
+        )
+      )
     }
 
     def setAssetScript(assetId: String, sender: String, fee: Long, script: Option[String] = None, version: Byte = 1): Future[Transaction] = {
@@ -308,7 +313,8 @@ object AsyncHttpApi extends Assertions {
           "sender"  -> sender,
           "fee"     -> fee,
           "script"  -> { if (script.isDefined) JsString(script.get) else JsNull }
-        ))
+        )
+      )
     }
 
     def invokeScript(caller: String,
@@ -329,7 +335,8 @@ object AsyncHttpApi extends Assertions {
           "payment"    -> payment,
           "fee"        -> fee,
           "feeAssetId" -> { if (feeAssetId.isDefined) JsString(feeAssetId.get) else JsNull }
-        ))
+        )
+      )
     }
 
     def scriptCompile(code: String): Future[CompiledScript] = post("/utils/script/compile", code).as[CompiledScript]
@@ -365,28 +372,34 @@ object AsyncHttpApi extends Assertions {
       get(s"/assets/nft/$address/limit/$limit").as[Seq[NFTAssetInfo]]
 
     def nftAssetsBalance(address: String, limit: Int, after: String): Future[Seq[NFTAssetInfo]] =
-      get(s"/assets/nft/$address/limit/${limit}?after=$after").as[Seq[NFTAssetInfo]]
+      get(s"/assets/nft/$address/limit/$limit?after=$after").as[Seq[NFTAssetInfo]]
 
     def assetsDetails(assetId: String, fullInfo: Boolean = false): Future[AssetInfo] =
       get(s"/assets/details/$assetId?full=$fullInfo").as[AssetInfo]
 
     def sponsorAsset(sourceAddress: String, assetId: String, minSponsoredAssetFee: Long, fee: Long): Future[Transaction] =
       signAndBroadcast(
-        Json.obj("type"                 -> SponsorFeeTransaction.typeId,
-                 "assetId"              -> assetId,
-                 "sender"               -> sourceAddress,
-                 "fee"                  -> fee,
-                 "version"              -> 1,
-                 "minSponsoredAssetFee" -> minSponsoredAssetFee))
+        Json.obj(
+          "type"                 -> SponsorFeeTransaction.typeId,
+          "assetId"              -> assetId,
+          "sender"               -> sourceAddress,
+          "fee"                  -> fee,
+          "version"              -> 1,
+          "minSponsoredAssetFee" -> minSponsoredAssetFee
+        )
+      )
 
     def cancelSponsorship(sourceAddress: String, assetId: String, fee: Long): Future[Transaction] =
       signAndBroadcast(
-        Json.obj("type"                 -> SponsorFeeTransaction.typeId,
-                 "assetId"              -> assetId,
-                 "sender"               -> sourceAddress,
-                 "fee"                  -> fee,
-                 "version"              -> 1,
-                 "minSponsoredAssetFee" -> JsNull))
+        Json.obj(
+          "type"                 -> SponsorFeeTransaction.typeId,
+          "assetId"              -> assetId,
+          "sender"               -> sourceAddress,
+          "fee"                  -> fee,
+          "version"              -> 1,
+          "minSponsoredAssetFee" -> JsNull
+        )
+      )
 
     def transfer(sourceAddress: String, recipient: String, amount: Long, fee: Long): Future[Transaction] =
       postJson("/assets/transfer", TransferV1Request(None, None, amount, fee, sourceAddress, None, recipient)).as[Transaction]
@@ -400,7 +413,8 @@ object AsyncHttpApi extends Assertions {
           "fee"       -> fee,
           "version"   -> 1,
           "transfers" -> Json.toJson(transfers)
-        ))
+        )
+      )
     }
 
     def putData(sourceAddress: String, data: List[DataEntry[_]], fee: Long): Future[Transaction] = {
@@ -469,7 +483,8 @@ object AsyncHttpApi extends Assertions {
           "sender"  -> targetAddress,
           "fee"     -> fee,
           "alias"   -> alias
-        ))
+        )
+      )
 
     def aliasByAddress(targetAddress: String): Future[Seq[String]] =
       get(s"/alias/by-address/$targetAddress").as[Seq[String]]
@@ -575,7 +590,8 @@ object AsyncHttpApi extends Assertions {
                   response
                 } else {
                   n.log.debug(
-                    s"[$id] Request: ${r.getMethod} ${r.getUrl}\nUnexpected status code(${response.getStatusCode}): ${response.getResponseBody}")
+                    s"[$id] Request: ${r.getMethod} ${r.getUrl}\nUnexpected status code(${response.getStatusCode}): ${response.getResponseBody}"
+                  )
                   throw UnexpectedStatusCodeException(r.getMethod, r.getUrl, response.getStatusCode, response.getResponseBody)
                 }
               }
@@ -662,7 +678,7 @@ object AsyncHttpApi extends Assertions {
       for {
         allHeights   <- traverse(nodes)(_.waitForTransaction(transactionId).map(_.height))
         _            <- traverse(nodes)(_.waitForHeight(allHeights.max + 1))
-        finalHeights <- traverse(nodes)(_.waitForTransaction(transactionId).map(_.height))
+        _            <- traverse(nodes)(_.waitForTransaction(transactionId).map(_.height))
         _ <- waitFor("nodes sync")(1 second)(
           _.waitForTransaction(transactionId).map(_.height),
           (finalHeights: Iterable[Int]) => finalHeights.forall(_ == finalHeights.head)
@@ -678,7 +694,7 @@ object AsyncHttpApi extends Assertions {
         _      <- traverse(nodes)(_.waitForHeight(height + 1))
       } yield height + 1
 
-    def waitForSameBlockHeadesAt(height: Int, retryInterval: FiniteDuration = 5.seconds): Future[Boolean] = {
+    def waitForSameBlockHeadersAt(height: Int, retryInterval: FiniteDuration = 5.seconds): Future[Boolean] = {
 
       def waitHeight = waitFor[Int](s"all heights >= $height")(retryInterval)(_.height, _.forall(_ >= height))
 

@@ -3,7 +3,7 @@ package com.acrylplatform.api.http
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.Complete
 import akka.http.scaladsl.server.directives.{DebuggingDirectives, LoggingMagnet}
@@ -13,8 +13,12 @@ import com.acrylplatform.api.http.swagger.SwaggerDocService
 import com.acrylplatform.settings.RestAPISettings
 import com.acrylplatform.utils.ScorexLogging
 
+import scala.concurrent.Future
+
 case class CompositeHttpService(apiTypes: Set[Class[_]], routes: Seq[ApiRoute], settings: RestAPISettings)(implicit system: ActorSystem)
     extends ScorexLogging {
+
+  private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   private val swaggerService    = new SwaggerDocService(system, ActorMaterializer()(system), apiTypes, settings)
   private val redirectToSwagger = redirect("/api-docs/index.html", StatusCodes.PermanentRedirect)
@@ -24,8 +28,9 @@ case class CompositeHttpService(apiTypes: Set[Class[_]], routes: Seq[ApiRoute], 
       pathEndOrSingleSlash(redirectToSwagger) ~ getFromResourceDirectory("swagger-ui")
     }
 
-  val compositeRoute: Route        = extendRoute(routes.map(_.route).reduce(_ ~ _)) ~ swaggerRoute ~ complete(StatusCodes.NotFound)
-  val loggingCompositeRoute: Route = DebuggingDirectives.logRequestResult(LoggingMagnet(_ => logRequestResponse))(compositeRoute)
+  val compositeRoute: Route                             = extendRoute(routes.map(_.route).reduce(_ ~ _)) ~ swaggerRoute ~ complete(StatusCodes.NotFound)
+  val loggingCompositeRoute: Route                      = DebuggingDirectives.logRequestResult(LoggingMagnet(_ => logRequestResponse))(compositeRoute)
+  val asyncHandler: HttpRequest => Future[HttpResponse] = Route.asyncHandler(loggingCompositeRoute)
 
   private def logRequestResponse(req: HttpRequest)(res: RouteResult): Unit = res match {
     case Complete(resp) =>

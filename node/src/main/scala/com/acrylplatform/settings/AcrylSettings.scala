@@ -21,6 +21,7 @@ case class AcrylSettings(directory: String,
                          utxSettings: UtxSettings,
                          featuresSettings: FeaturesSettings,
                          metrics: Metrics.Settings,
+                         nodeStatus: Boolean,
                          config: Config)
 
 object AcrylSettings extends CustomValueReaders {
@@ -41,6 +42,7 @@ object AcrylSettings extends CustomValueReaders {
     val utxSettings               = acryl.as[UtxSettings]("utx")
     val featuresSettings          = acryl.as[FeaturesSettings]("features")
     val metrics                   = acryl.as[Metrics.Settings]("metrics")
+    val nodeStatus                = acryl.as[Boolean]("node-status")
 
     AcrylSettings(
       directory,
@@ -57,6 +59,7 @@ object AcrylSettings extends CustomValueReaders {
       utxSettings,
       featuresSettings,
       metrics,
+      nodeStatus,
       rootConfig
     )
   }

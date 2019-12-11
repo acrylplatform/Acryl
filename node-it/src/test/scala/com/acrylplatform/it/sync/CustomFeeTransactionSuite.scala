@@ -2,6 +2,7 @@ package com.acrylplatform.it.sync
 
 import com.typesafe.config.{Config, ConfigFactory}
 import com.acrylplatform.account.KeyPair
+import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.EitherExt2
 import com.acrylplatform.it.NodeConfigs.Default
 import com.acrylplatform.it.api.SyncHttpApi._
@@ -50,7 +51,7 @@ class CustomFeeTransactionSuite extends BaseTransactionSuite with CancelAfterFai
     notMiner.assertAssetBalance(minerAddress, issuedAssetId, transferFee)
 
     // after `feature-check-blocks-period` asset fees should be sponsored
-    nodes.waitForSameBlockHeadesAt(featureCheckBlocksPeriod)
+    nodes.waitForSameBlockHeadersAt(featureCheckBlocksPeriod)
     val sponsoredId = notMiner.transfer(senderAddress, secondAddress, 1, transferFee, Some(issuedAssetId), Some(issuedAssetId)).id
     nodes.waitForHeightAriseAndTxPresent(sponsoredId)
 
@@ -69,12 +70,12 @@ class CustomFeeTransactionSuite extends BaseTransactionSuite with CancelAfterFai
 object CustomFeeTransactionSuite {
   private val minerAddress             = Default.head.getString("address")
   private val senderAddress            = Default(2).getString("address")
-  private val defaultAssetQuantity     = 999999999999l
+  private val defaultAssetQuantity     = 999999999999L
   private val featureCheckBlocksPeriod = 13
 
   private val seed = Default(2).getString("account-seed")
   private val pk   = KeyPair.fromSeed(seed).explicitGet()
-  val assetTx = IssueTransactionV1
+  val assetTx: IssueTransactionV1 = IssueTransactionV1
     .selfSigned(
       sender = pk,
       name = "asset".getBytes("UTF-8"),
@@ -88,7 +89,7 @@ object CustomFeeTransactionSuite {
     .right
     .get
 
-  val assetId = assetTx.id()
+  val assetId: ByteStr = assetTx.id()
 
   private val minerConfig = ConfigFactory.parseString(s"""
                                                          | acryl.fees.transfer.$assetId = 100000

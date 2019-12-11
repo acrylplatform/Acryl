@@ -4,10 +4,9 @@ import sbt._
 
 object Dependencies {
 
-  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.20"
+  def akkaModule(module: String): ModuleID = "com.typesafe.akka" %% s"akka-$module" % "2.5.23"
 
-  private def swaggerModule(module: String)                = "io.swagger.core.v3"            % s"swagger-$module" % "2.0.5"
-  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.8"
+  private def akkaHttpModule(module: String)               = "com.typesafe.akka"             %% module            % "10.1.10"
   private def nettyModule(module: String)                  = "io.netty"                      % s"netty-$module"   % "4.1.33.Final"
   private def kamonModule(module: String, v: String)       = "io.kamon"                      %% s"kamon-$module"  % v
   private def jacksonModule(group: String, module: String) = s"com.fasterxml.jackson.$group" % s"jackson-$module" % "2.9.8"
@@ -73,7 +72,7 @@ object Dependencies {
       shapeless.value
     ))
 
-  val console = Seq("com.github.scopt" %% "scopt" % "4.0.0-RC2")
+  val console: Seq[ModuleID] = Seq("com.github.scopt" %% "scopt" % "4.0.0-RC2")
 
   val common = Def.setting(
     Seq(
@@ -107,7 +106,8 @@ object Dependencies {
       compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0-M4")
     ))
 
-  lazy val itTest = scalaTest +: Seq(
+  lazy val itTest: Seq[ModuleID] = scalaTest +: Seq(
+    logback,
     // Swagger is using Jersey 1.1, hence the shading (https://github.com/spotify/docker-client#a-note-on-shading)
     ("com.spotify" % "docker-client" % "8.15.1").classifier("shaded"),
     jacksonModule("dataformat", "dataformat-properties"),
@@ -115,7 +115,7 @@ object Dependencies {
     "org.scalacheck"      %% "scalacheck"       % "1.14.0"
   ).map(_ % Test)
 
-  lazy val test = scalaTest +: Seq(
+  lazy val test: Seq[ModuleID] = scalaTest +: Seq(
     logback.exclude("org.scala-js", "scalajs-library_2.12"),
     "org.scalacheck" %% "scalacheck" % "1.14.0",
     ("io.github.amrhassan" %% "scalacheck-cats" % "0.4.0").exclude("org.scalacheck", "scalacheck_2.12"),
@@ -140,10 +140,12 @@ object Dependencies {
       "com.typesafe.play"        %% "play-json"     % "2.7.1",
       "org.ethereum"             % "leveldbjni-all" % "1.18.3",
       // "io.swagger"                   %% "swagger-scala-module" % "1.0.4",
-      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.0.0",
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0",
+      "javax.xml.bind"               % "jaxb-api"           % "2.3.1", // javax.xml.bind replacement for jackson in swagger
       jacksonModule("core", "databind"),
       jacksonModuleScala,
       akkaHttp,
+      akkaHttpModule("akka-http2-support"),
       "org.bitlet" % "weupnp" % "0.1.4",
       akkaModule("persistence"),
       akkaModule("slf4j"),
@@ -152,11 +154,11 @@ object Dependencies {
       nettyModule("handler"),
       akkaModule("testkit")               % Test,
       akkaHttpModule("akka-http-testkit") % Test,
-      ("org.iq80.leveldb" % "leveldb" % "0.9").exclude("com.google.guava", "guava") % Test
+      ("org.iq80.leveldb" % "leveldb" % "0.12").exclude("com.google.guava", "guava") % Test
     ) ++ protobuf.value ++ test ++ console
   )
 
-  lazy val matcher = Seq(
+  lazy val matcher: Seq[ModuleID] = Seq(
     akkaModule("actor"),
     akkaModule("persistence-query"),
     akkaHttp,

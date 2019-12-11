@@ -18,7 +18,7 @@ class PeersRouteSpec extends RouteSpec("/peers") with RestAPISettingsHelper with
   import PeersRouteSpec._
 
   private val peerDatabase   = mock[PeerDatabase]
-  private val connectToPeer  = mockFunction[InetSocketAddress, Unit]
+  private val connectToPeer  = mockFunction[InetSocketAddress, Channel]
   private val inetAddressGen = Gen.listOfN(4, Arbitrary.arbitrary[Byte]).map(_.toArray).map(InetAddress.getByAddress)
   private val inetSocketAddressGen = for {
     address <- inetAddressGen
@@ -110,7 +110,15 @@ object PeersRouteSpec {
 
   implicit val connectReqFormat: Format[ConnectReq] = Json.format
 
-  case class ConnectResp(status: String, hostname: String)
+  case class ConnectResp(
+    status: String,
+    hostname: String,
+    open: Boolean,
+    active: Boolean,
+    registered: Boolean,
+    writable: Boolean,
+    id: String
+  )
 
   implicit val connectRespFormat: Format[ConnectResp] = Json.format
 

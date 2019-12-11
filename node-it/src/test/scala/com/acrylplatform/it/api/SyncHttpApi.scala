@@ -6,8 +6,8 @@ import java.util.concurrent.TimeoutException
 
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import com.acrylplatform.account.{AddressOrAlias, AddressScheme, KeyPair}
-import com.acrylplatform.api.http.AddressApiRoute
 import com.acrylplatform.api.http.assets.{SignedIssueV1Request, SignedIssueV2Request}
+import com.acrylplatform.api.http.AddressApiRoute
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.EitherExt2
 import com.acrylplatform.features.api.{ActivationStatus, FeatureActivationStatus}
@@ -16,12 +16,12 @@ import com.acrylplatform.it.Node
 import com.acrylplatform.lang.script.Script
 import com.acrylplatform.lang.v1.compiler.Terms
 import com.acrylplatform.state.{AssetDistribution, AssetDistributionPage, DataEntry, Portfolio}
-import com.acrylplatform.transaction.Asset
 import com.acrylplatform.transaction.assets.IssueTransactionV2
 import com.acrylplatform.transaction.lease.{LeaseCancelTransactionV2, LeaseTransactionV2}
 import com.acrylplatform.transaction.smart.InvokeScriptTransaction
 import com.acrylplatform.transaction.transfer.MassTransferTransaction.Transfer
 import com.acrylplatform.transaction.transfer.TransferTransactionV2
+import com.acrylplatform.transaction.Asset
 import org.asynchttpclient.Response
 import org.scalactic.source.Position
 import org.scalatest.{Assertion, Assertions, Matchers}
@@ -46,18 +46,21 @@ object SyncHttpApi extends Assertions {
 
   def assertBadRequestAndResponse[R](f: => R, errorRegex: String): Assertion = Try(f) match {
     case Failure(UnexpectedStatusCodeException(_, _, statusCode, responseBody)) =>
-      Assertions.assert(statusCode == BadRequest.intValue && responseBody.replace("\n", "").matches(s".*$errorRegex.*"),
-                        s"\nexpected '$errorRegex'\nactual '$responseBody'")
+      Assertions.assert(
+        statusCode == BadRequest.intValue && responseBody.replace("\n", "").matches(s".*$errorRegex.*"),
+        s"\nexpected '$errorRegex'\nactual '$responseBody'"
+      )
     case Failure(e) => Assertions.fail(e)
     case _          => Assertions.fail("Expecting bad request")
   }
 
-  def assertBadRequestAndMessage[R](f: => R, errorMessage: String, expectedStatusCode: Int = BadRequest.intValue): Assertion = Try(f) match {
-    case Failure(UnexpectedStatusCodeException(_, _, statusCode, responseBody)) =>
-      Assertions.assert(statusCode == expectedStatusCode && parse(responseBody).as[ErrorMessage].message.contains(errorMessage))
-    case Failure(e) => Assertions.fail(e)
-    case Success(s) => Assertions.fail(s"Expecting bad request but handle $s")
-  }
+  def assertBadRequestAndMessage[R](f: => R, errorMessage: String, expectedStatusCode: Int = BadRequest.intValue): Assertion =
+    Try(f) match {
+      case Failure(UnexpectedStatusCodeException(_, _, statusCode, responseBody)) =>
+        Assertions.assert(statusCode == expectedStatusCode && parse(responseBody).as[ErrorMessage].message.contains(errorMessage))
+      case Failure(e) => Assertions.fail(e)
+      case Success(s) => Assertions.fail(s"Expecting bad request but handle $s")
+    }
 
   val RequestAwaitTime: FiniteDuration = 50.seconds
 
@@ -191,13 +194,11 @@ object SyncHttpApi extends Assertions {
     def reissue(sourceAddress: String, assetId: String, quantity: Long, reissuable: Boolean, fee: Long): Transaction =
       sync(async(n).reissue(sourceAddress, assetId, quantity, reissuable, fee))
 
-    def debugStateChanges(transactionId:String): DebugStateChanges ={
+    def debugStateChanges(transactionId: String): DebugStateChanges =
       sync(async(n).debugStateChanges(transactionId))
-    }
 
-    def debugStateChangesByAddress(address:String, limit: Int): Seq[DebugStateChanges] ={
+    def debugStateChangesByAddress(address: String, limit: Int): Seq[DebugStateChanges] =
       sync(async(n).debugStateChangesByAddress(address, limit))
-    }
 
     def payment(sourceAddress: String, recipient: String, amount: Long, fee: Long): Transaction =
       sync(async(n).payment(sourceAddress, recipient, amount, fee))
@@ -334,7 +335,7 @@ object SyncHttpApi extends Assertions {
       maybeWaitForTransaction(sync(async(n).broadcastRequest(tx.json())), wait = waitForTx)
     }
 
-    def cancelLease(sourceAddress: String, leaseId: String, fee: Long, version: Byte = 1): Transaction =
+    def cancelLease(sourceAddress: String, leaseId: String, fee: Long): Transaction =
       sync(async(n).cancelLease(sourceAddress, leaseId, fee))
 
     def expectSignedBroadcastRejected(json: JsValue): Int = sync(async(n).expectSignedBroadcastRejected(json))
@@ -361,9 +362,8 @@ object SyncHttpApi extends Assertions {
     def waitForTransaction(txId: String, retryInterval: FiniteDuration = 1.second): TransactionInfo =
       sync(async(n).waitForTransaction(txId))
 
-    def signAndBroadcast(tx: JsValue, waitForTx: Boolean = false): Transaction = {
+    def signAndBroadcast(tx: JsValue, waitForTx: Boolean = false): Transaction =
       maybeWaitForTransaction(sync(async(n).signAndBroadcast(tx)), waitForTx)
-    }
 
     def waitForHeight(expectedHeight: Int, requestAwaitTime: FiniteDuration = RequestAwaitTime): Int =
       sync(async(n).waitForHeight(expectedHeight), requestAwaitTime)
@@ -460,14 +460,16 @@ object SyncHttpApi extends Assertions {
     def waitForHeightArise(): Int =
       sync(async(nodes).waitForHeightArise(), TxInBlockchainAwaitTime)
 
-    def waitForSameBlockHeadesAt(height: Int,
+    def waitForSameBlockHeadersAt(height: Int,
                                  retryInterval: FiniteDuration = 5.seconds,
                                  conditionAwaitTime: FiniteDuration = ConditionAwaitTime): Boolean =
-      sync(async(nodes).waitForSameBlockHeadesAt(height, retryInterval), conditionAwaitTime)
+      sync(async(nodes).waitForSameBlockHeadersAt(height, retryInterval), conditionAwaitTime)
 
     def waitFor[A](desc: String)(retryInterval: FiniteDuration)(request: Node => A, cond: Iterable[A] => Boolean): Boolean =
-      sync(async(nodes).waitFor(desc)(retryInterval)((n: Node) => Future(request(n))(scala.concurrent.ExecutionContext.Implicits.global), cond),
-           ConditionAwaitTime)
+      sync(
+        async(nodes).waitFor(desc)(retryInterval)((n: Node) => Future(request(n))(scala.concurrent.ExecutionContext.Implicits.global), cond),
+        ConditionAwaitTime
+      )
 
     def rollback(height: Int, returnToUTX: Boolean = true): Unit = {
       sync(
