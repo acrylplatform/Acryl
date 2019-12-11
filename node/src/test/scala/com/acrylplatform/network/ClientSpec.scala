@@ -62,9 +62,7 @@ class ClientSpec extends FreeSpec with Matchers with MockFactory with Transactio
     HandshakeHandler.checkApplicationName("wavesA", "wavesK") shouldBe false
   }
 
-  "should match supported version of the application" in {
-    HandshakeHandler.versionIsSupported((1, 0, 4)) shouldBe true
-
+  "should not match supported version of the application" in {
     HandshakeHandler.versionIsSupported((0, 15, 5)) shouldBe false
   }
 
