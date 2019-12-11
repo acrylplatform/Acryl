@@ -83,14 +83,14 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
     }
 
   def portMapping(address: InetAddress, externalPort: Int, internalPort: Int, acc: Int): Int = {
-    val newPort = scala.util.Random.nextInt(55536) + 10000
+    val newPort = scala.util.Random.nextInt(55535) + 10000
     if (acc == 0)
       0
     else if (gateway.get.getSpecificPortMappingEntry(externalPort, "TCP", new PortMappingEntry()))
-      portMapping(address, newPort, newPort, acc - 1)
+      portMapping(address, newPort, internalPort, acc - 1)
     else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Scorex"))
       externalPort
     else
-      portMapping(address, newPort, newPort, acc - 1)
+      portMapping(address, newPort, internalPort, acc - 1)
   }
 }
