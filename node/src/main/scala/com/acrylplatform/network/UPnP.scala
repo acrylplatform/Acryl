@@ -4,9 +4,12 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import com.acrylplatform.settings.UPnPSettings
 import com.acrylplatform.utils.ScorexLogging
+import monix.execution.{Cancelable, Scheduler}
+import monix.execution.schedulers.SchedulerService
 import org.bitlet.weupnp.{GatewayDevice, GatewayDiscover, PortMappingEntry}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 class UPnP(settings: UPnPSettings) extends ScorexLogging {
@@ -33,6 +36,8 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
     else if (ipUPnP == ipService) Option(InetAddress.getByName(ipUPnP))
     else Option(InetAddress.getByName(ipService))
   }
+
+  val scheduler: SchedulerService = Scheduler.io("UPnP Check")
 
   Try {
     log.info("Looking for UPnP gateway device...")
@@ -66,8 +71,10 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
   def addPort(port: Int): Either[String, InetSocketAddress] =
     if (externalAddress.nonEmpty && localAddress.nonEmpty)
       portMapping(localAddress.get, port, port, 20) match {
-        case 0            => Left("Unable to map port")
-        case newPort: Int => Right(new InetSocketAddress(externalAddress.get.getHostAddress, newPort))
+        case 0 => Left("Unable to map port")
+        case newPort: Int =>
+          runUPnPCheck(localAddress.get, newPort, port)
+          Right(new InetSocketAddress(externalAddress.get.getHostAddress, newPort))
       } else Left("No external or local address")
 
   def deletePort(port: Int): Try[Unit] =
@@ -88,9 +95,25 @@ class UPnP(settings: UPnPSettings) extends ScorexLogging {
       0
     else if (gateway.get.getSpecificPortMappingEntry(externalPort, "TCP", new PortMappingEntry()))
       portMapping(address, newPort, internalPort, acc - 1)
-    else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Scorex"))
+    else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Acryl Node"))
       externalPort
     else
       portMapping(address, newPort, internalPort, acc - 1)
   }
+
+  def runUPnPCheck(address: InetAddress, externalPort: Int, internalPort: Int): Cancelable =
+    scheduler.scheduleAtFixedRate(0.seconds, 60.seconds) {
+      val status = gateway.map(_.isConnected) match {
+        case Some(value) => value
+        case None        => false
+      }
+      if (!status)
+        log.debug("Gateway disconnect")
+      else if (gateway.get.getSpecificPortMappingEntry(externalPort, "TCP", new PortMappingEntry()))
+        log.debug("UPnP working!")
+      else if (gateway.get.addPortMapping(externalPort, internalPort, address.getHostAddress, "TCP", "Acryl Node"))
+        log.debug("Mapped port [" + address + "]:" + externalPort)
+      else
+        log.debug("Unable repeatedly to map port")
+    }
 }
