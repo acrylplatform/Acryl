@@ -8,7 +8,7 @@ import com.acrylplatform.utils.ScorexLogging
   * System constants here.
   */
 object Constants extends ScorexLogging {
-  val ApplicationName = "waves" // TODO : during the transition
+  val ApplicationName = "acryl"
   val AgentName       = s"Acryl v${Version.VersionString}"
 
   val UnitsInWave = 100000000L
