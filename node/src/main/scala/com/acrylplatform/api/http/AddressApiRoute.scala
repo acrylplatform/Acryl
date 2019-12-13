@@ -397,7 +397,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
     Address
       .fromString(address)
       .map { acc =>
-        ToResponseMarshallable(commonAccountApi.dataStream(acc).toListL.runAsyncLogErr.map(_.sortBy(_.key)))
+        ToResponseMarshallable(commonAccountApi.dataStreamAndId(acc).toListL.runAsyncLogErr.map(_.sortBy(_._1.key)))
       }
       .getOrElse(InvalidAddress)
   }
@@ -407,10 +407,10 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
       .fromString(address)
       .map { addr =>
         val result: ToResponseMarshallable = commonAccountApi
-          .dataStream(addr, k => regex.matcher(k).matches())
+          .dataStreamAndId(addr, k => regex.matcher(k).matches())
           .toListL
           .runAsyncLogErr
-          .map(_.sortBy(_.key))
+          .map(_.sortBy(_._1.key))
 
         result
       }

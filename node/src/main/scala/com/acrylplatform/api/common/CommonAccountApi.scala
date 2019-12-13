@@ -1,10 +1,11 @@
 package com.acrylplatform.api.common
+
 import com.acrylplatform.account.Address
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.lang.script.Script
 import com.acrylplatform.state.diffs.FeeValidation
 import com.acrylplatform.state.{Blockchain, BlockchainExt, DataEntry, Height}
-import com.acrylplatform.transaction.Asset
+import com.acrylplatform.transaction.{Asset, DataTransaction}
 import com.acrylplatform.transaction.Asset.IssuedAsset
 import com.acrylplatform.transaction.assets.IssueTransaction
 import com.acrylplatform.transaction.lease.{LeaseTransaction, LeaseTransactionV1, LeaseTransactionV2}
@@ -67,6 +68,31 @@ class CommonAccountApi(blockchain: Blockchain) {
       .map(blockchain.accountData(address, _))
       .flatMap(Observable.fromIterable(_))
   }
+
+  def dataStreamAndId(address: Address, keyFilter: String => Boolean = _ => true): Observable[(DataEntry[_], String)] =
+    for {
+      data <- Observable
+        .defer(Observable.fromIterable(concurrent.blocking(blockchain.accountDataKeys(address))))
+        .filter(keyFilter)
+        .map(blockchain.accountData(address, _))
+        .flatMap(Observable.fromIterable(_))
+      id <- getTxId(address, data.key)
+    } yield {
+      (data, id)
+    }
+
+  def getTxId(address: Address, key: String): Observable[String] =
+    blockchain
+      .addressTransactionsObservable(address, Set.empty, None)
+      .filter {
+        case (_, dtx: DataTransaction) => dtx.data.exists(data => data.key == key)
+        case (_, _)                    => ???
+      }
+      .map {
+        case (_, dtx: DataTransaction) => dtx.id.value().base58
+        case (_, _)                    => ???
+      }
+      .head
 
   def activeLeases(address: Address): Observable[(Height, LeaseTransaction)] = {
     blockchain
