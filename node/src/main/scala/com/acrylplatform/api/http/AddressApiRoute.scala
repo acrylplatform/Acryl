@@ -12,7 +12,7 @@ import com.acrylplatform.common.utils.{Base58, Base64}
 import com.acrylplatform.crypto
 import com.acrylplatform.http.BroadcastRoute
 import com.acrylplatform.settings.RestAPISettings
-import com.acrylplatform.state.Blockchain
+import com.acrylplatform.state.{Blockchain, DataEntry}
 import com.acrylplatform.transaction.TransactionFactory
 import com.acrylplatform.transaction.TxValidationError.GenericError
 import com.acrylplatform.utils.Time
@@ -397,7 +397,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
     Address
       .fromString(address)
       .map { acc =>
-        ToResponseMarshallable(commonAccountApi.dataStreamAndId(acc).toListL.runAsyncLogErr.map(_.sortBy(_._1.key)))
+        ToResponseMarshallable(commonAccountApi.dataStreamAndId(acc).toListL.runAsyncLogErr.map(_.sortBy(_.data.key)))
       }
       .getOrElse(InvalidAddress)
   }
@@ -410,7 +410,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
           .dataStreamAndId(addr, k => regex.matcher(k).matches())
           .toListL
           .runAsyncLogErr
-          .map(_.sortBy(_._1.key))
+          .map(_.sortBy(_.data.key))
 
         result
       }
@@ -500,4 +500,8 @@ object AddressApiRoute {
   case class AddressScriptInfo(address: String, script: Option[String], scriptText: Option[String], complexity: Long, extraFee: Long)
 
   implicit val accountScriptInfoFormat: Format[AddressScriptInfo] = Json.format
+
+  case class DAI(data: DataEntry[_], id: String)
+
+  implicit val daiFormat: Format[DAI] = Json.format
 }

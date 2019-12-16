@@ -1,6 +1,7 @@
 package com.acrylplatform.api.common
 
 import com.acrylplatform.account.Address
+import com.acrylplatform.api.http.AddressApiRoute.DAI
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.lang.script.Script
 import com.acrylplatform.state.diffs.FeeValidation
@@ -64,7 +65,7 @@ class CommonAccountApi(blockchain: Blockchain) {
       .map(blockchain.accountData(address, _))
       .flatMap(Observable.fromIterable(_))
 
-  def dataStreamAndId(address: Address, keyFilter: String => Boolean = _ => true): Observable[(DataEntry[_], String)] =
+  def dataStreamAndId(address: Address, keyFilter: String => Boolean = _ => true): Observable[DAI] =
     for {
       data <- Observable
         .defer(Observable.fromIterable(concurrent.blocking(blockchain.accountDataKeys(address))))
@@ -73,7 +74,7 @@ class CommonAccountApi(blockchain: Blockchain) {
         .flatMap(Observable.fromIterable(_))
       id <- getTxId(address, data.key)
     } yield {
-      (data, id)
+      DAI(data, id)
     }
 
   def getTxId(address: Address, key: String): Observable[String] =
