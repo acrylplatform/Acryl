@@ -39,7 +39,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
   private[this] val commonAccountApi = new CommonAccountApi(blockchain)
   val MaxAddressesPerRequest         = 1000
 
-  override lazy val route =
+  override lazy val route: Route =
     pathPrefix("addresses") {
       validate ~ seed ~ balanceWithConfirmations ~ balanceDetails ~ balance ~ balanceWithConfirmations ~ verify ~ sign ~ deleteAddress ~ verifyText ~
         signText ~ seq ~ publicKey ~ effectiveBalance ~ effectiveBalanceWithConfirmations ~ getData ~ getDataAndID ~ getDataItem ~ postData ~ scriptInfo
@@ -397,7 +397,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
             Balance(
               acc.address,
               0,
-              commonAccountApi.balance(acc, 0)
+              commonAccountApi.balance(acc)
             )))
       .getOrElse(InvalidAddress)
   }
@@ -553,7 +553,7 @@ object AddressApiRoute {
 
   implicit val accountScriptInfoFormat: Format[AddressScriptInfo] = Json.format
 
-  case class DAI(data: DataEntry[_], id: String)
+  case class DataAndID(data: DataEntry[_], id: String)
 
-  implicit val daiFormat: Format[DAI] = Json.format
+  implicit val daiFormat: Format[DataAndID] = Json.format
 }
