@@ -42,7 +42,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
   override lazy val route =
     pathPrefix("addresses") {
       validate ~ seed ~ balanceWithConfirmations ~ balanceDetails ~ balance ~ balanceWithConfirmations ~ verify ~ sign ~ deleteAddress ~ verifyText ~
-        signText ~ seq ~ publicKey ~ effectiveBalance ~ effectiveBalanceWithConfirmations ~ getData ~ getDataItem ~ postData ~ scriptInfo
+        signText ~ seq ~ publicKey ~ effectiveBalance ~ effectiveBalanceWithConfirmations ~ getData ~ getDataAndID ~ getDataItem ~ postData ~ scriptInfo
     } ~ root ~ create
 
   @Path("/scriptInfo/{address}")
@@ -295,6 +295,34 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
     }
   }
 
+  @Path("/data/txid/{address}")
+  @ApiOperation(value = "Complete Data", notes = "Read all data and ID transaction posted by an account", httpMethod = "GET")
+  @ApiImplicitParams(
+    Array(
+      new ApiImplicitParam(name = "address", value = "Address", required = true, dataType = "string", paramType = "path"),
+      new ApiImplicitParam(
+        name = "matches",
+        value = "URL encoded (percent-encoded) regular expression to filter keys (https://www.tutorialspoint.com/scala/scala_regular_expressions.htm)",
+        required = false,
+        dataType = "string",
+        paramType = "query"
+      )
+    ))
+  def getDataAndID: Route = (path("data" / "txid" / Segment) & parameter('matches.?) & get) { (address, maybeRegex) =>
+    maybeRegex match {
+      case None => complete(accountDataAndID(address))
+      case Some(regex) =>
+        complete(
+          Try(regex.r)
+            .fold(
+              _ => ApiError.fromValidationError(GenericError(s"Cannot compile regex")),
+              r => accountDataAndID(address, r.pattern)
+            )
+        )
+
+    }
+  }
+
   @Path("/data/{address}/{key}")
   @ApiOperation(value = "Data by Key", notes = "Read data associated with an account and a key", httpMethod = "GET")
   @ApiImplicitParams(
@@ -397,7 +425,7 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
     Address
       .fromString(address)
       .map { acc =>
-        ToResponseMarshallable(commonAccountApi.dataStreamAndId(acc).toListL.runAsyncLogErr.map(_.sortBy(_.data.key)))
+        ToResponseMarshallable(commonAccountApi.dataStream(acc).toListL.runAsyncLogErr.map(_.sortBy(_.key)))
       }
       .getOrElse(InvalidAddress)
   }
@@ -407,10 +435,10 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
       .fromString(address)
       .map { addr =>
         val result: ToResponseMarshallable = commonAccountApi
-          .dataStreamAndId(addr, k => regex.matcher(k).matches())
+          .dataStream(addr, k => regex.matcher(k).matches())
           .toListL
           .runAsyncLogErr
-          .map(_.sortBy(_.data.key))
+          .map(_.sortBy(_.key))
 
         result
       }
@@ -423,6 +451,30 @@ case class AddressApiRoute(settings: RestAPISettings, wallet: Wallet, blockchain
       value <- commonAccountApi.data(addr, key).toRight(DataKeyDoesNotExist)
     } yield value
     ToResponseMarshallable(result)
+  }
+
+  private def accountDataAndID(address: String): ToResponseMarshallable = {
+    Address
+      .fromString(address)
+      .map { acc =>
+        ToResponseMarshallable(commonAccountApi.dataStreamAndId(acc).toListL.runAsyncLogErr.map(_.sortBy(_.data.key)))
+      }
+      .getOrElse(InvalidAddress)
+  }
+
+  private def accountDataAndID(address: String, regex: Pattern): ToResponseMarshallable = {
+    Address
+      .fromString(address)
+      .map { addr =>
+        val result: ToResponseMarshallable = commonAccountApi
+          .dataStreamAndId(addr, k => regex.matcher(k).matches())
+          .toListL
+          .runAsyncLogErr
+          .map(_.sortBy(_.data.key))
+
+        result
+      }
+      .getOrElse(InvalidAddress)
   }
 
   private def signPath(address: String, encode: Boolean) = (post & entity(as[String])) { message =>
