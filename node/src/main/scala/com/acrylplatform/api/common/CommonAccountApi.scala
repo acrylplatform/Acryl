@@ -14,13 +14,11 @@ import monix.reactive.Observable
 class CommonAccountApi(blockchain: Blockchain) {
   import CommonAccountApi._
 
-  def balance(address: Address, confirmations: Int = 0): Long = {
+  def balance(address: Address, confirmations: Int = 0): Long =
     blockchain.balance(address, blockchain.height, confirmations)
-  }
 
-  def effectiveBalance(address: Address, confirmations: Int = 0): Long = {
+  def effectiveBalance(address: Address, confirmations: Int = 0): Long =
     blockchain.effectiveBalance(address, confirmations)
-  }
 
   def balanceDetails(address: Address): BalanceDetails = {
     val portfolio = blockchain.acrylPortfolio(address)
@@ -34,9 +32,8 @@ class CommonAccountApi(blockchain: Blockchain) {
     )
   }
 
-  def assetBalance(address: Address, asset: IssuedAsset): Long = {
+  def assetBalance(address: Address, asset: IssuedAsset): Long =
     blockchain.balance(address, asset)
-  }
 
   def portfolio(address: Address): Map[Asset, Long] = {
     val portfolio = blockchain.portfolio(address)
@@ -57,17 +54,15 @@ class CommonAccountApi(blockchain: Blockchain) {
     )
   }
 
-  def data(address: Address, key: String): Option[DataEntry[_]] = {
+  def data(address: Address, key: String): Option[DataEntry[_]] =
     blockchain.accountData(address, key)
-  }
 
-  def dataStream(address: Address, keyFilter: String => Boolean = _ => true): Observable[DataEntry[_]] = {
+  def dataStream(address: Address, keyFilter: String => Boolean = _ => true): Observable[DataEntry[_]] =
     Observable
       .defer(Observable.fromIterable(concurrent.blocking(blockchain.accountDataKeys(address))))
       .filter(keyFilter)
       .map(blockchain.accountData(address, _))
       .flatMap(Observable.fromIterable(_))
-  }
 
   def dataStreamAndId(address: Address, keyFilter: String => Boolean = _ => true): Observable[(DataEntry[_], String)] =
     for {
@@ -94,14 +89,13 @@ class CommonAccountApi(blockchain: Blockchain) {
       }
       .head
 
-  def activeLeases(address: Address): Observable[(Height, LeaseTransaction)] = {
+  def activeLeases(address: Address): Observable[(Height, LeaseTransaction)] =
     blockchain
       .addressTransactionsObservable(address, Set(LeaseTransactionV1, LeaseTransactionV2))
       .collect {
         case (height, leaseTransaction: LeaseTransaction) if blockchain.leaseDetails(leaseTransaction.id()).exists(_.isActive) =>
           (height, leaseTransaction)
       }
-  }
 }
 
 object CommonAccountApi {
