@@ -42,7 +42,7 @@ case class TransactionsApiRoute(settings: RestAPISettings,
   private[this] val commonApi =
     new CommonTransactionsApi(blockchain, utx, wallet, (tx, isNew) => if (isNew || settings.allowTxRebroadcasting) allChannels.broadcastTx(tx, None))
 
-  override lazy val route =
+  override lazy val route: Route =
     pathPrefix("transactions") {
       unconfirmed ~ addressLimit ~ info ~ sign ~ calculateFee ~ broadcast
     }
@@ -68,7 +68,7 @@ case class TransactionsApiRoute(settings: RestAPISettings,
   }
 
   @Path("/info/{id}")
-  @ApiOperation(value = "Transaction info", notes = "Get a transaction by its ID", httpMethod = "GET")
+  @ApiOperation(value = "Transaction info", notes = "Get a transaction and unconfirmed transactions by its ID", httpMethod = "GET")
   @ApiImplicitParams(
     Array(
       new ApiImplicitParam(name = "id", value = "Transaction ID", required = true, dataType = "string", paramType = "path")
@@ -80,7 +80,8 @@ case class TransactionsApiRoute(settings: RestAPISettings,
       path(Segment) { encoded =>
         ByteStr.decodeBase58(encoded) match {
           case Success(id) =>
-            commonApi.transactionById(id) match {
+            commonApi.allTransactionById(id) match {
+              case Some((0, tx)) => complete(txToExtendedJson(tx))
               case Some((h, tx)) => complete(txToExtendedJson(tx) + ("height" -> JsNumber(h)))
               case None          => complete(ApiError.TransactionDoesNotExist)
             }
@@ -105,6 +106,7 @@ case class TransactionsApiRoute(settings: RestAPISettings,
     complete(Json.obj("size" -> JsNumber(utx.size)))
   }
 
+  @Deprecated
   @Path("/unconfirmed/info/{id}")
   @ApiOperation(value = "Unconfirmed transaction info", notes = "Get an unconfirmed transaction by its ID", httpMethod = "GET")
   @ApiImplicitParams(
