@@ -310,10 +310,27 @@ class TransactionsRouteSpec
 
       forAll(txAvailability) {
         case (tx, height) =>
+          (utx.transactionById _).expects(tx.id()).returns(None).once()
           (blockchain.transactionInfo _).expects(tx.id()).returning(Some((height, tx))).once()
           Get(routePath(s"/info/${tx.id().base58}")) ~> route ~> check {
             status shouldEqual StatusCodes.OK
             responseAs[JsValue] shouldEqual tx.json() + ("height" -> JsNumber(height))
+          }
+      }
+    }
+
+    "working properly otherwise for unconfirmed transactions" in {
+      val txAvailability = for {
+        tx     <- randomTransactionGen
+        height <- posNum[Int]
+      } yield (tx, height)
+
+      forAll(txAvailability) {
+        case (tx, _) =>
+          (utx.transactionById _).expects(tx.id()).returns(Some(tx)).once()
+          Get(routePath(s"/info/${tx.id().base58}")) ~> route ~> check {
+            status shouldEqual StatusCodes.OK
+            responseAs[JsValue] shouldEqual tx.json()
           }
       }
     }

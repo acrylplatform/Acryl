@@ -45,4 +45,14 @@ private[api] class CommonTransactionsApi(blockchain: Blockchain, utx: UtxPool, w
 
     result
   }
+
+  def allTransactionById(transactionId: ByteStr): Option[(Int, VanillaTransaction)] =
+    utx.transactionById(transactionId) match {
+      case Some(value) => Some((0, value))
+      case None =>
+        blockchain.transactionInfo(transactionId) match {
+          case Some(value) => Some(value)
+          case None        => None
+        }
+    }
 }

@@ -80,7 +80,8 @@ case class TransactionsApiRoute(settings: RestAPISettings,
       path(Segment) { encoded =>
         ByteStr.decodeBase58(encoded) match {
           case Success(id) =>
-            commonApi.transactionById(id) match {
+            commonApi.allTransactionById(id) match {
+              case Some((0, tx)) => complete(txToExtendedJson(tx))
               case Some((h, tx)) => complete(txToExtendedJson(tx) + ("height" -> JsNumber(h)))
               case None          => complete(ApiError.TransactionDoesNotExist)
             }
