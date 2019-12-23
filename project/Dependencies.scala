@@ -152,6 +152,7 @@ object Dependencies {
       kindProjector,
       monixModule("reactive").value,
       nettyModule("handler"),
+      nettyModule("handler-proxy"),
       akkaModule("testkit")               % Test,
       akkaHttpModule("akka-http-testkit") % Test,
       ("org.iq80.leveldb" % "leveldb" % "0.12").exclude("com.google.guava", "guava") % Test

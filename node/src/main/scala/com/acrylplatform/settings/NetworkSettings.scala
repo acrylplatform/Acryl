@@ -19,6 +19,7 @@ case class NetworkSettings(file: Option[File],
                            bindAddress: InetSocketAddress,
                            declaredAddress: Option[InetSocketAddress],
                            dockerIpAddress: String,
+                           proxy: Option[InetSocketAddress],
                            nodeName: String,
                            nonce: Long,
                            knownPeers: Seq[String],
@@ -64,6 +65,11 @@ object NetworkSettings {
       new InetSocketAddress(uri.getHost, uri.getPort)
     }
 
+    val proxy = config.getAs[String]("proxy").map { address =>
+      val uri = new URI(s"my://$address")
+      new InetSocketAddress(uri.getHost, uri.getPort)
+    }
+
     val dockerIpAddress              = config.as[String]("docker-ip-address")
     val knownPeers                   = config.as[Seq[String]]("known-peers")
     val savingPeers                  = config.as[Boolean]("saving-peers")
@@ -89,6 +95,7 @@ object NetworkSettings {
       bindAddress,
       declaredAddress,
       dockerIpAddress,
+      proxy,
       nodeName,
       nonce,
       knownPeers,
