@@ -326,7 +326,10 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
       val httpFuture = SSLConnection.getSSL(settings.restAPISettings) match {
         case Left(message) =>
           log.debug(message)
-          Http2().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, ConnectionContext.noEncryption())
+          Http2().bindAndHandleAsync(asyncHandler,
+                                     settings.restAPISettings.bindAddress,
+                                     settings.restAPISettings.port,
+                                     ConnectionContext.noEncryption())
         case Right(https) =>
           log.debug("HTTPS enable")
           Http().bindAndHandleAsync(asyncHandler, settings.restAPISettings.bindAddress, settings.restAPISettings.port, https)
