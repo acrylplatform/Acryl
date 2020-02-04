@@ -110,8 +110,9 @@ class BlockWithMaxBaseTargetTest extends FreeSpec with Matchers with WithDB with
   def withEnv(f: Env => Unit): Unit = {
     val defaultWriter = new LevelDBWriter(db, ignoreSpendableBalanceChanged, TestFunctionalitySettings.Stub, dbSettings)
 
-    val settings0     = AcrylSettings.fromRootConfig(loadConfig(ConfigFactory.load()))
-    val minerSettings = settings0.minerSettings.copy(quorum = 0)
+    val settings0        = AcrylSettings.fromRootConfig(loadConfig(ConfigFactory.load()))
+    val minerSettings    = settings0.minerSettings.copy(quorum = 0)
+    val networkSettings0 = settings0.networkSettings.copy(knownPeers = Seq.empty)
     val blockchainSettings0 = settings0.blockchainSettings.copy(
       functionalitySettings = settings0.blockchainSettings.functionalitySettings.copy(
         preActivatedFeatures = Map(BlockchainFeatures.FairPoS.id -> 1)
@@ -121,6 +122,7 @@ class BlockWithMaxBaseTargetTest extends FreeSpec with Matchers with WithDB with
     val settings = settings0.copy(
       blockchainSettings = blockchainSettings0,
       minerSettings = minerSettings,
+      networkSettings = networkSettings0,
       synchronizationSettings = synchronizationSettings0,
       featuresSettings = settings0.featuresSettings.copy(autoShutdownOnUnsupportedFeature = false)
     )

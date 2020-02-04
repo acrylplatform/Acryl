@@ -12,7 +12,7 @@ import com.acrylplatform.features.FeatureProvider._
 import com.acrylplatform.lang.ValidationError
 import com.acrylplatform.metrics.{BlockStats, HistogramExt, Instrumented, _}
 import com.acrylplatform.network._
-import com.acrylplatform.settings.{FunctionalitySettings, AcrylSettings}
+import com.acrylplatform.settings.{AcrylSettings, FunctionalitySettings}
 import com.acrylplatform.state._
 import com.acrylplatform.state.appender.{BlockAppender, MicroblockAppender}
 import com.acrylplatform.transaction._
@@ -21,6 +21,7 @@ import com.acrylplatform.utx.UtxPoolImpl
 import com.acrylplatform.wallet.Wallet
 import io.netty.channel.group.ChannelGroup
 import kamon.Kamon
+import kamon.metric.CounterMetric
 import monix.eval.Task
 import monix.execution.cancelables.{CompositeCancelable, SerialCancelable}
 import monix.execution.schedulers.SchedulerService
@@ -149,9 +150,26 @@ class MinerImpl(allChannels: ChannelGroup,
     } yield (estimators, block, updatedMdConstraint.constraints.head))
   }
 
+  private def checkMasterNodeAvailable(allChannels: ChannelGroup): Boolean = {
+    val masternodes = settings.networkSettings.knownPeers
+
+    var result = false
+
+    allChannels.forEach(ch => {
+      val addr = ch.remoteAddress().toString.replaceAll("/", "")
+      if (masternodes.contains(addr)) result = true
+    })
+
+    if (masternodes.isEmpty) true else result
+  }
+
   private def checkQuorumAvailable(): Either[String, Unit] = {
     val chanCount = allChannels.size()
-    Either.cond(chanCount >= minerSettings.quorum, (), s"Quorum not available ($chanCount/${minerSettings.quorum}), not forging block.")
+    Either.cond(
+      chanCount >= minerSettings.quorum && checkMasterNodeAvailable(allChannels),
+      (),
+      s"Quorum not available ($chanCount/${minerSettings.quorum}), not forging block or no connection to masternodes"
+    )
   }
 
   private def blockFeatures(version: Byte): Set[Short] = {
@@ -169,8 +187,9 @@ class MinerImpl(allChannels: ChannelGroup,
                                         restTotalConstraint: MiningConstraint): Task[MicroblockMiningResult] = {
     log.trace(s"Generating microBlock for $account, constraints: $restTotalConstraint")
     val pc = allChannels.size()
-    if (pc < minerSettings.quorum) {
-      log.trace(s"Quorum not available ($pc/${minerSettings.quorum}), not forging microblock with ${account.address}, next attempt in 5 seconds")
+    if (pc < minerSettings.quorum && !checkMasterNodeAvailable(allChannels)) {
+      log.trace(
+        s"Quorum not available ($pc/${minerSettings.quorum}), not forging microblock with ${account.address} or no connection to masternodes, next attempt in 5 seconds")
       Task.now(Delay(settings.minerSettings.noQuorumMiningDelay))
     } else if (utx.size == 0) {
       log.trace(s"Skipping microBlock because utx is empty")
@@ -356,15 +375,15 @@ class MinerImpl(allChannels: ChannelGroup,
 }
 
 object Miner {
-  val blockMiningStarted = Kamon.counter("block-mining-started")
-  val microMiningStarted = Kamon.counter("micro-mining-started")
+  val blockMiningStarted: CounterMetric = Kamon.counter("block-mining-started")
+  val microMiningStarted: CounterMetric = Kamon.counter("micro-mining-started")
 
   val MaxTransactionsPerMicroblock: Int = 500
 
   case object Disabled extends Miner with MinerDebugInfo {
     override def scheduleMining(): Unit                                                         = ()
     override def getNextBlockGenerationOffset(account: KeyPair): Either[String, FiniteDuration] = Left("Disabled")
-    override val state                                                                          = MinerDebugInfo.Disabled
+    override val state: MinerDebugInfo.State                                                    = MinerDebugInfo.Disabled
   }
 
   sealed trait MicroblockMiningResult
