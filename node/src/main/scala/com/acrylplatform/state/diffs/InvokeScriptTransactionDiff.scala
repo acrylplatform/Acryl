@@ -103,7 +103,8 @@ object InvokeScriptTransactionDiff {
 
           pmts: List[Map[Address, Map[Option[ByteStr], Long]]] = ps.map {
             case (Recipient.Address(addrBytes), amt, maybeAsset) =>
-              Map(Address.fromBytes(addrBytes.arr).explicitGet() -> Map(maybeAsset -> amt))
+              val nativeAddr = Address.fromBytes(addrBytes.arr).explicitGet()
+              Map(nativeAddr -> Map(maybeAsset -> amt))
           }
 
           feeInfo <- TracedResult(tx.assetFee._1 match {
@@ -120,7 +121,7 @@ object InvokeScriptTransactionDiff {
                 )
               } yield {
                 (acrylFee,
-                 Map(
+                 Portfolio.combineAll(
                    tx.sender.toAddress        -> Portfolio(0, LeaseBalance.empty, Map(asset         -> -tx.fee)),
                    assetInfo.issuer.toAddress -> Portfolio(-acrylFee, LeaseBalance.empty, Map(asset -> tx.fee))
                  ))
@@ -163,7 +164,7 @@ object InvokeScriptTransactionDiff {
                 .collect { case asset @ IssuedAsset(_) => asset }
                 .count(blockchain.hasAssetScript) +
                 ps.count(_._3.fold(false)(id => blockchain.hasAssetScript(IssuedAsset(id)))) +
-                (if (blockchain.hasScript(tx.sender)) { 1 } else { 0 })
+                (if (blockchain.hasScript(tx.sender)) 1 else 0)
             val minAcryl = totalScriptsInvoked * ScriptExtraFee + OldFeeUnits(InvokeScriptTransaction.typeId) * FeeUnit
             Either.cond(
               minAcryl <= acrylFee,
@@ -225,20 +226,15 @@ object InvokeScriptTransactionDiff {
     } else {
       val totalDataBytes = dataEntries.map(_.toBytes.length).sum
 
-      val payablePart: Map[Address, Portfolio] = tx.payment
-        .map {
-          case InvokeScriptTransaction.Payment(amt, assetId) =>
-            assetId match {
-              case asset @ IssuedAsset(_) =>
-                Map(tx.sender.toAddress -> Portfolio(0, LeaseBalance.empty, Map(asset -> -amt))).combine(
-                  Map(dAppAddress -> Portfolio(0, LeaseBalance.empty, Map(asset -> amt)))
-                )
-              case Acryl =>
-                Map(tx.sender.toAddress -> Portfolio(-amt, LeaseBalance.empty, Map.empty))
-                  .combine(Map(dAppAddress -> Portfolio(amt, LeaseBalance.empty, Map.empty)))
-            }
-        }
-        .foldLeft(Map[Address, Portfolio]())(_ combine _)
+      val payablePart = Monoid.combineAll(
+        tx.payment.map(
+          p =>
+            Portfolio.combineAllAcrylOrAsset(p.assetId)(
+              tx.sender.toAddress -> -p.amount,
+              dAppAddress         -> p.amount
+          )
+        )
+      )
 
       if (totalDataBytes <= ContractLimits.MaxWriteSetSizeInBytes) {
         Right(
@@ -263,17 +259,17 @@ object InvokeScriptTransactionDiff {
           case Acryl =>
             Diff
               .stateOps(
-                portfolios = Map(
-                  address     -> Portfolio(amount, LeaseBalance.empty, Map.empty),
-                  dAppAddress -> Portfolio(-amount, LeaseBalance.empty, Map.empty)
+                portfolios = Portfolio.combineAllAcryl(
+                  address     -> amount,
+                  dAppAddress -> -amount
                 )
               )
               .asRight[ValidationError]
           case a @ IssuedAsset(id) =>
             val nextDiff = Diff.stateOps(
-              portfolios = Map(
-                address     -> Portfolio(0, LeaseBalance.empty, Map(a -> amount)),
-                dAppAddress -> Portfolio(0, LeaseBalance.empty, Map(a -> -amount))
+              portfolios = Portfolio.combineAllAsset(a)(
+                address     -> amount,
+                dAppAddress -> -amount
               ))
             blockchain.assetScript(a) match {
               case None =>
