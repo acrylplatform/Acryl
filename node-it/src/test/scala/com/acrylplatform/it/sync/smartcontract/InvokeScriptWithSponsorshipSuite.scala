@@ -25,41 +25,28 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
   var callerInitBalance: Long = 0
 
   test("_send acryl to dApp and caller accounts") {
-    val dAppTransferId   = sender.transfer(sender.address, dApp.address, 5.acryl, minFee).id
-    val callerTransferId = sender.transfer(sender.address, caller.address, 5.acryl, minFee).id
-
-    nodes.waitForHeightAriseAndTxPresent(callerTransferId)
-    nodes.waitForTransaction(dAppTransferId)
+    sender.transfer(sender.address, dApp.address, 5.acryl, minFee, waitForTx = true).id
+    sender.transfer(sender.address, caller.address, 5.acryl, minFee, waitForTx = true).id
   }
 
   test("_issue and transfer assets") {
-    dAppAsset = sender.issue(dApp.address, "dApp", "d", quantity, 0).id
-    callerAsset = sender.issue(caller.address, "caller", "c", quantity, 0).id
+    dAppAsset = sender.issue(dApp.address, "dApp", "d", quantity, 0, waitForTx = true).id
+    callerAsset = sender.issue(caller.address, "caller", "c", quantity, 0, waitForTx = true).id
     val script = Some(ScriptCompiler.compile("true").explicitGet()._1.bytes.value.base64)
-    smartAsset = sender.issue(dApp.address, "Smart", "s", quantity, 0, script = script).id
+    smartAsset = sender.issue(dApp.address, "Smart", "s", quantity, 0, script = script, waitForTx = true).id
 
-    nodes.waitForHeightAriseAndTxPresent(callerAsset)
-    sender.waitForTransaction(dAppAsset)
-
-    val dAppToCallerId  = sender.transfer(dApp.address, caller.address, halfQuantity, minFee, Some(dAppAsset)).id
-    val callerToDAppId  = sender.transfer(caller.address, dApp.address, halfQuantity, minFee, Some(callerAsset)).id
-    val smartToCallerId = sender.transfer(dApp.address, caller.address, halfQuantity, smartMinFee, Some(smartAsset)).id
-
-    nodes.waitForHeightAriseAndTxPresent(smartToCallerId)
-    sender.waitForTransaction(callerToDAppId)
-    sender.waitForTransaction(dAppToCallerId)
+    sender.transfer(dApp.stringRepr, caller.stringRepr, halfQuantity, minFee, Some(dAppAsset), waitForTx = true).id
+    sender.transfer(caller.stringRepr, dApp.stringRepr, halfQuantity, minFee, Some(callerAsset), waitForTx = true).id
+    sender.transfer(dApp.stringRepr, caller.stringRepr, halfQuantity, smartMinFee, Some(smartAsset), waitForTx = true).id
   }
 
   test("_enable sponsorship") {
-    val dAppSponsor   = sender.sponsorAsset(dApp.address, dAppAsset, 1).id
-    val callerSponsor = sender.sponsorAsset(caller.address, callerAsset, 1).id
-
-    nodes.waitForHeightAriseAndTxPresent(callerSponsor)
-    sender.waitForTransaction(dAppSponsor)
+    sender.sponsorAsset(dApp.stringRepr, dAppAsset, 1, waitForTx = true).id
+    sender.sponsorAsset(caller.stringRepr, callerAsset, 1, waitForTx = true).id
   }
 
   test("_set scripts to dApp and caller account") {
-    val dAppScript        = ScriptCompiler.compile(s"""
+    val dAppScript = ScriptCompiler.compile(s"""
           |{-# STDLIB_VERSION 3 #-}
           |{-# CONTENT_TYPE DAPP #-}
           |
@@ -103,9 +90,9 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
           |  else throw("need payment in smartAsset " + toBase58String(smartAsset))
           |}
         """.stripMargin).explicitGet()._1
-    val dAppSetScriptTxId = sender.setScript(dApp.address, Some(dAppScript.bytes().base64)).id
+    sender.setScript(dApp.address, Some(dAppScript.bytes().base64), waitForTx = true).id
 
-    val callerScript        = ScriptCompiler.compile(s"""
+    val callerScript = ScriptCompiler.compile(s"""
           |{-# STDLIB_VERSION 3 #-}
           |{-# CONTENT_TYPE DAPP #-}
           |
@@ -121,10 +108,7 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
           |  }
           |}
         """.stripMargin).explicitGet()._1
-    val callerSetScriptTxId = sender.setScript(caller.address, Some(callerScript.bytes().base64)).id
-
-    nodes.waitForHeightAriseAndTxPresent(callerSetScriptTxId)
-    sender.waitForTransaction(dAppSetScriptTxId)
+    sender.setScript(caller.stringRepr, Some(callerScript.bytes().base64), waitForTx = true).id
 
     val dAppScriptInfo = sender.addressScriptInfo(dApp.address)
     dAppScriptInfo.script.isEmpty shouldBe false
@@ -168,29 +152,28 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
       s"does not exceed minimal value of 5300000 ACRYL"
     )
 
-    val invokeScript1TxId = sender
+    sender
       .invokeScript(
         caller.address,
         dApp.address,
         Some("payCallerGetDAppAsset"),
         payment = Seq(Payment(paymentAmount, IssuedAsset(ByteStr.decodeBase58(callerAsset).get))),
         fee = feeAmount,
-        feeAssetId = Some(dAppAsset)
+        feeAssetId = Some(dAppAsset),
+        waitForTx = true
       )
       .id
-    val invokeScript2TxId = sender
+    sender
       .invokeScript(
         caller.address,
         dApp.address,
         Some("spendMaxFee"),
         payment = Seq(Payment(paymentAmount, IssuedAsset(ByteStr.decodeBase58(smartAsset).get))),
         fee = smartFeeAmount,
-        feeAssetId = Some(dAppAsset)
+        feeAssetId = Some(dAppAsset),
+        waitForTx = true
       )
       .id
-
-    nodes.waitForHeightAriseAndTxPresent(invokeScript2TxId)
-    sender.waitForTransaction(invokeScript1TxId)
 
     sender.assetBalance(dApp.address, dAppAsset).balance shouldBe halfQuantity + (feeAmount - 10) + smartFeeAmount
     sender.assetBalance(dApp.address, callerAsset).balance shouldBe halfQuantity + paymentAmount
@@ -199,6 +182,29 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
     sender.assetBalance(caller.address, dAppAsset).balance shouldBe halfQuantity + (-feeAmount + 10) - smartFeeAmount
     sender.assetBalance(caller.address, callerAsset).balance shouldBe halfQuantity - paymentAmount
     sender.accountBalances(caller.address)._1 shouldBe callerInitBalance
+  }
+
+  test("dApp caller is dApp address") {
+    val paymentAmount = 1
+    val feeAmount     = 9
+
+    val dAppAssetBalance = sender.assetBalance(dApp.stringRepr, dAppAsset).balance
+    val dAppWavesBalance = sender.accountBalances(dApp.stringRepr)._1
+
+    sender
+      .invokeScript(
+        dApp.stringRepr,
+        dApp.stringRepr,
+        Some("payCallerGetDAppAsset"),
+        payment = Seq(Payment(paymentAmount, IssuedAsset(ByteStr.decodeBase58(callerAsset).get))),
+        fee = feeAmount,
+        feeAssetId = Some(dAppAsset),
+        waitForTx = true
+      )
+      .id
+
+    sender.assetBalance(dApp.stringRepr, dAppAsset).balance shouldBe dAppAssetBalance
+    sender.accountBalances(dApp.stringRepr)._1 shouldBe dAppWavesBalance - 0.009.acryl
   }
 
 }
