@@ -1,6 +1,6 @@
 package com.acrylplatform.settings
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import com.acrylplatform.metrics.Metrics
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -63,4 +63,6 @@ object AcrylSettings extends CustomValueReaders {
       rootConfig
     )
   }
+
+  def default(): AcrylSettings = fromRootConfig(ConfigFactory.load())
 }

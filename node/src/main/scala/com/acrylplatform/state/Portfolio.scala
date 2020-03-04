@@ -2,6 +2,7 @@ package com.acrylplatform.state
 
 import cats._
 import cats.kernel.instances.map._
+import com.acrylplatform.account.Address
 import com.acrylplatform.block.Block.Fraction
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.Base58
@@ -26,15 +27,28 @@ case class Portfolio(balance: Long, lease: LeaseBalance, assets: Map[IssuedAsset
 }
 
 object Portfolio {
+  val empty: Portfolio = Portfolio(0L, Monoid[LeaseBalance].empty, Map.empty)
 
   def build(a: Asset, amount: Long): Portfolio = a match {
     case Acryl              => Portfolio(amount, LeaseBalance.empty, Map.empty)
     case t @ IssuedAsset(_) => Portfolio(0L, LeaseBalance.empty, Map(t -> amount))
   }
 
-  val empty = Portfolio(0L, Monoid[LeaseBalance].empty, Map.empty)
+  def combineAll(pfs: (Address, Portfolio)*): Map[Address, Portfolio] =
+    Monoid.combineAll(pfs.map { case (addr, pf) => Map(addr -> pf) })
 
-  implicit val longSemigroup: Semigroup[Long] = (x: Long, y: Long) => safeSum(x, y)
+  def combineAllAcryl(pfs: (Address, Long)*): Map[Address, Portfolio] =
+    Monoid.combineAll(pfs.map { case (addr, balance) => Map(addr -> Portfolio(balance, LeaseBalance.empty, Map.empty)) })
+
+  def combineAllAsset(asset: IssuedAsset)(pfs: (Address, Long)*): Map[Address, Portfolio] =
+    Monoid.combineAll(pfs.map { case (addr, balance) => Map(addr -> Portfolio(0, LeaseBalance.empty, Map(asset -> balance))) })
+
+  def combineAllAcrylOrAsset(asset: Asset)(pfs: (Address, Long)*): Map[Address, Portfolio] = asset match {
+    case ia: IssuedAsset => combineAllAsset(ia)(pfs: _*)
+    case Asset.Acryl     => combineAllAcryl(pfs: _*)
+  }
+
+  implicit val safeLongSemigroup: Semigroup[Long] = (x: Long, y: Long) => safeSum(x, y)
 
   implicit val monoid: Monoid[Portfolio] = new Monoid[Portfolio] {
     override val empty: Portfolio = Portfolio.empty
@@ -80,7 +94,7 @@ object Portfolio {
   }
 
   implicit val assetMapReads: Reads[Map[IssuedAsset, Long]] = Reads {
-    case JsObject(fields) => {
+    case JsObject(fields) =>
       val keyReads = implicitly[Reads[Long]]
       val valueReads: String => JsResult[IssuedAsset] = (s: String) =>
         Base58
@@ -91,6 +105,7 @@ object Portfolio {
         )
 
       type Errors = Seq[(JsPath, Seq[JsonValidationError])]
+
       def locate(e: Errors, key: String) = e.map {
         case (p, valerr) => (JsPath \ key) ++ p -> valerr
       }
@@ -111,7 +126,6 @@ object Portfolio {
             }
         }
         .fold(JsError.apply, res => JsSuccess(res))
-    }
 
     case _ => JsError("error.expected.jsobject")
   }
