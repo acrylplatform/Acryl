@@ -10,6 +10,20 @@ import net.ceedubs.ficus.readers.ValueReader
 
 import scala.concurrent.duration._
 
+case class RewardsSettings(initial: Long) {
+  require(initial >= 0, "initial must be greater than or equal to 0")
+}
+
+object RewardsSettings {
+  val MAINNET: RewardsSettings = apply(
+    6 * Constants.UnitsInWave
+  )
+
+  val TESTNET: RewardsSettings = apply(
+    6 * Constants.UnitsInWave
+  )
+}
+
 case class FunctionalitySettings(featureCheckBlocksPeriod: Int,
                                  blocksForFeatureActivation: Int,
                                  allowTemporaryNegativeUntil: Long,
@@ -51,7 +65,7 @@ case class FunctionalitySettings(featureCheckBlocksPeriod: Int,
 }
 
 object FunctionalitySettings {
-  val MAINNET = apply(
+  val MAINNET: FunctionalitySettings = apply(
     featureCheckBlocksPeriod = 5000,
     blocksForFeatureActivation = 5000,
     allowTemporaryNegativeUntil = 0,
@@ -78,7 +92,7 @@ object FunctionalitySettings {
     maxTransactionTimeForwardOffset = 90.minutes
   )
 
-  val TESTNET = apply(
+  val TESTNET: FunctionalitySettings = apply(
     featureCheckBlocksPeriod = 180,
     blocksForFeatureActivation = 180,
     allowTemporaryNegativeUntil = 0,
@@ -124,7 +138,7 @@ case class GenesisSettings(blockTimestamp: Long,
                            averageBlockDelay: FiniteDuration)
 
 object GenesisSettings {
-  val MAINNET = GenesisSettings(
+  val MAINNET: GenesisSettings = GenesisSettings(
     1547912728383L,
     1547912728383L,
     Constants.UnitsInWave * Constants.TotalAcryl,
@@ -136,7 +150,7 @@ object GenesisSettings {
     60.seconds
   )
 
-  val TESTNET = GenesisSettings(
+  val TESTNET: GenesisSettings = GenesisSettings(
     1542454288000L,
     1542454288000L,
     Constants.UnitsInWave * Constants.TotalAcryl,
@@ -150,7 +164,10 @@ object GenesisSettings {
   )
 }
 
-case class BlockchainSettings(addressSchemeCharacter: Char, functionalitySettings: FunctionalitySettings, genesisSettings: GenesisSettings)
+case class BlockchainSettings(addressSchemeCharacter: Char,
+                              functionalitySettings: FunctionalitySettings,
+                              genesisSettings: GenesisSettings,
+                              rewardsSettings: RewardsSettings)
 
 object BlockchainType extends Enumeration {
   val TESTNET: BlockchainType.Value = Value("TESTNET")
@@ -167,22 +184,26 @@ object BlockchainSettings {
 
   private[this] def fromConfig(config: Config): BlockchainSettings = {
     val blockchainType = config.as[BlockchainType.Value]("type")
-    val (addressSchemeCharacter, functionalitySettings, genesisSettings) = blockchainType match {
+    val (addressSchemeCharacter: Char,
+         functionalitySettings: FunctionalitySettings,
+         genesisSettings: GenesisSettings,
+         rewardsSettings: RewardsSettings) = blockchainType match {
       case BlockchainType.TESTNET =>
-        ('K', FunctionalitySettings.TESTNET, GenesisSettings.TESTNET)
+        ('K', FunctionalitySettings.TESTNET, GenesisSettings.TESTNET, RewardsSettings.TESTNET)
       case BlockchainType.MAINNET =>
-        ('A', FunctionalitySettings.MAINNET, GenesisSettings.MAINNET)
+        ('A', FunctionalitySettings.MAINNET, GenesisSettings.MAINNET, RewardsSettings.MAINNET)
       case BlockchainType.CUSTOM =>
         val addressSchemeCharacter = config.as[String](s"custom.address-scheme-character").charAt(0)
         val functionalitySettings  = config.as[FunctionalitySettings](s"custom.functionality")
         val genesisSettings        = config.as[GenesisSettings](s"custom.genesis")
-        (addressSchemeCharacter, functionalitySettings, genesisSettings)
+        (addressSchemeCharacter, functionalitySettings, genesisSettings, rewardsSettings)
     }
 
     BlockchainSettings(
       addressSchemeCharacter = addressSchemeCharacter,
       functionalitySettings = functionalitySettings,
-      genesisSettings = genesisSettings
+      genesisSettings = genesisSettings,
+      rewardsSettings = rewardsSettings
     )
   }
 }
