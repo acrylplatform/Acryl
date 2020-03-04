@@ -45,6 +45,11 @@ trait Blockchain {
   def activatedFeatures: Map[Short, Int]
   def featureVotes(height: Int): Map[Short, Int]
 
+  def blockReward(height: Int): Option[Long]
+  def lastBlockReward: Option[Long]
+
+  def acrylAmount(height: Int): BigInt
+
   def transferById(id: ByteStr): Option[(Int, TransferTransaction)]
   def transactionInfo(id: ByteStr): Option[(Int, Transaction)]
   def transactionHeight(id: ByteStr): Option[Int]
