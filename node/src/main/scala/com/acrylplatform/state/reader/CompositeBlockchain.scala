@@ -19,7 +19,11 @@ import com.acrylplatform.transaction.lease.LeaseTransaction
 import com.acrylplatform.transaction.transfer.TransferTransaction
 import com.acrylplatform.transaction.{Asset, Transaction}
 
-final case class CompositeBlockchain(inner: Blockchain, maybeDiff: Option[Diff] = None, newBlock: Option[Block] = None, carry: Long = 0)
+final case class CompositeBlockchain(inner: Blockchain,
+                                     maybeDiff: Option[Diff] = None,
+                                     newBlock: Option[Block] = None,
+                                     carry: Long = 0,
+                                     reward: Option[Long] = None)
     extends Blockchain {
   override val settings: BlockchainSettings = inner.settings
 
@@ -230,6 +234,13 @@ final case class CompositeBlockchain(inner: Blockchain, maybeDiff: Option[Diff] 
   override def activatedFeatures: Map[Short, Int] = inner.activatedFeatures
 
   override def featureVotes(height: Int): Map[Short, Int] = inner.featureVotes(height)
+
+  /** Block reward related */
+  override def blockReward(height: Int): Option[Long] = reward.filter(_ => this.height == height) orElse inner.blockReward(height)
+
+  override def lastBlockReward: Option[Long] = reward.orElse(inner.lastBlockReward)
+
+  override def acrylAmount(height: Int): BigInt = inner.acrylAmount(height)
 }
 
 object CompositeBlockchain extends AddressTransactions.Prov[CompositeBlockchain] with Distributions.Prov[CompositeBlockchain] {
