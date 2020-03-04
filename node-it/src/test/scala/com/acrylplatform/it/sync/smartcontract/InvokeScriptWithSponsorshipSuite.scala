@@ -189,7 +189,7 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
     val feeAmount     = 9
 
     val dAppAssetBalance = sender.assetBalance(dApp.stringRepr, dAppAsset).balance
-    val dAppWavesBalance = sender.accountBalances(dApp.stringRepr)._1
+    val dAppAcrylBalance = sender.accountBalances(dApp.stringRepr)._1
 
     sender
       .invokeScript(
@@ -204,7 +204,7 @@ class InvokeScriptWithSponsorshipSuite extends BaseTransactionSuite with CancelA
       .id
 
     sender.assetBalance(dApp.stringRepr, dAppAsset).balance shouldBe dAppAssetBalance
-    sender.accountBalances(dApp.stringRepr)._1 shouldBe dAppWavesBalance - 0.009.acryl
+    sender.accountBalances(dApp.stringRepr)._1 shouldBe dAppAcrylBalance - 0.009.acryl
   }
 
 }
