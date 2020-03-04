@@ -1,6 +1,6 @@
 package com.acrylplatform
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import com.acrylplatform.account.KeyPair
 import com.acrylplatform.block.{Block, MicroBlock}
 import com.acrylplatform.common.state.ByteStr
@@ -9,27 +9,29 @@ import com.acrylplatform.consensus.nxt.NxtLikeConsensusBlockData
 import com.acrylplatform.crypto._
 import com.acrylplatform.features.BlockchainFeatures
 import com.acrylplatform.lagonaki.mocks.TestBlock
-import com.acrylplatform.settings.{BlockchainSettings, TestFunctionalitySettings, AcrylSettings}
+import com.acrylplatform.settings._
 import com.acrylplatform.transaction.Transaction
 
 package object history {
   val MaxTransactionsPerBlockDiff = 10
   val MaxBlocksInMemory           = 5
   val DefaultBaseTarget           = 1000L
-  val DefaultBlockchainSettings = BlockchainSettings(
+  val DefaultBlockchainSettings: BlockchainSettings = BlockchainSettings(
     addressSchemeCharacter = 'N',
     functionalitySettings = TestFunctionalitySettings.Enabled,
-    genesisSettings = null
+    genesisSettings = GenesisSettings.TESTNET,
+    rewardsSettings = RewardsSettings.TESTNET
   )
 
-  val config   = ConfigFactory.load()
-  val settings = AcrylSettings.fromRootConfig(config)
+  val config: Config          = ConfigFactory.load()
+  val settings: AcrylSettings = AcrylSettings.fromRootConfig(config)
 
   val MicroblocksActivatedAt0BlockchainSettings: BlockchainSettings = DefaultBlockchainSettings.copy(
     functionalitySettings = DefaultBlockchainSettings.functionalitySettings.copy(preActivatedFeatures = Map(BlockchainFeatures.NG.id -> 0)))
 
   val DataAndMicroblocksActivatedAt0BlockchainSettings: BlockchainSettings = DefaultBlockchainSettings.copy(
-    functionalitySettings = DefaultBlockchainSettings.functionalitySettings.copy(preActivatedFeatures = Map(BlockchainFeatures.NG.id -> 0, BlockchainFeatures.DataTransaction.id -> 0)))
+    functionalitySettings = DefaultBlockchainSettings.functionalitySettings.copy(
+      preActivatedFeatures = Map(BlockchainFeatures.NG.id -> 0, BlockchainFeatures.DataTransaction.id -> 0)))
 
   val TransfersV2ActivatedAt0BlockchainSettings: BlockchainSettings =
     DefaultBlockchainSettings.copy(
@@ -38,14 +40,16 @@ package object history {
 
   val MicroblocksActivatedAt0AcrylSettings: AcrylSettings = settings.copy(blockchainSettings = MicroblocksActivatedAt0BlockchainSettings)
 
-  val DataAndMicroblocksActivatedAt0AcrylSettings: AcrylSettings = settings.copy(blockchainSettings = DataAndMicroblocksActivatedAt0BlockchainSettings)
+  val DataAndMicroblocksActivatedAt0AcrylSettings: AcrylSettings =
+    settings.copy(blockchainSettings = DataAndMicroblocksActivatedAt0BlockchainSettings)
 
   val TransfersV2ActivatedAt0AcrylSettings: AcrylSettings = settings.copy(blockchainSettings = TransfersV2ActivatedAt0BlockchainSettings)
 
-  val DefaultAcrylSettings: AcrylSettings = settings.copy(blockchainSettings = DefaultBlockchainSettings, featuresSettings = settings.featuresSettings.copy(autoShutdownOnUnsupportedFeature = false))
+  val DefaultAcrylSettings: AcrylSettings = settings.copy(blockchainSettings = DefaultBlockchainSettings,
+                                                          featuresSettings = settings.featuresSettings.copy(autoShutdownOnUnsupportedFeature = false))
 
-  val defaultSigner       = KeyPair(Array.fill(KeyLength)(0: Byte))
-  val generationSignature = ByteStr(Array.fill(Block.GeneratorSignatureLength)(0: Byte))
+  val defaultSigner: KeyPair       = KeyPair(Array.fill(KeyLength)(0: Byte))
+  val generationSignature: ByteStr = ByteStr(Array.fill(Block.GeneratorSignatureLength)(0: Byte))
 
   def buildBlockOfTxs(refTo: ByteStr, txs: Seq[Transaction]): Block = customBuildBlockOfTxs(refTo, txs, defaultSigner, 1, 0L)
 
@@ -102,7 +106,7 @@ package object history {
 
   def chainBlocks(txs: Seq[Seq[Transaction]]): Seq[Block] = {
     def chainBlocksR(refTo: ByteStr, txs: Seq[Seq[Transaction]]): Seq[Block] = txs match {
-      case (x :: xs) =>
+      case x :: xs =>
         val block = buildBlockOfTxs(refTo, x)
         block +: chainBlocksR(block.uniqueId, xs)
       case _ => Seq.empty
