@@ -196,6 +196,7 @@ object BlockchainSettings {
         val addressSchemeCharacter = config.as[String](s"custom.address-scheme-character").charAt(0)
         val functionalitySettings  = config.as[FunctionalitySettings](s"custom.functionality")
         val genesisSettings        = config.as[GenesisSettings](s"custom.genesis")
+        val rewardsSettings        = config.as[RewardsSettings](s"custom.rewards")
         (addressSchemeCharacter, functionalitySettings, genesisSettings, rewardsSettings)
     }
 
