@@ -4,10 +4,10 @@ import play.api.libs.json.Json
 
 object FirstDifferentBlock extends App {
 
-  def get(url: String) = scala.io.Source.fromURL(url).mkString
+  def get(url: String): String = scala.io.Source.fromURL(url).mkString
 
-  def blockAt(nodeHttp: String, blockHeight: Int)    = get(nodeHttp + "/blocks/at/" + blockHeight)
-  def blockSigAt(nodeHttp: String, blockHeight: Int) = (Json.parse(blockAt(nodeHttp, blockHeight)) \ "signature").get.as[String]
+  def blockAt(nodeHttp: String, blockHeight: Int): String    = get(nodeHttp + "/blocks/at/" + blockHeight)
+  def blockSigAt(nodeHttp: String, blockHeight: Int): String = (Json.parse(blockAt(nodeHttp, blockHeight)) \ "signature").get.as[String]
 
   def nodeComparator(node1: String, node2: String)(h: Int): Boolean = {
     blockSigAt(node1, h) == blockSigAt(node2, h)
