@@ -147,6 +147,7 @@ object MiningWithRewardSuite {
 
   val commonSettings: AcrylSettings                    = AcrylSettings.fromRootConfig(loadConfig(ConfigFactory.load()))
   val minerSettings: MinerSettings                     = commonSettings.minerSettings.copy(quorum = 0, intervalAfterLastBlockThenGenerationIsAllowed = 1 hour)
+  val networkSettings: NetworkSettings                 = commonSettings.networkSettings.copy(knownPeers = Seq.empty)
   val synchronizationSettings: SynchronizationSettings = commonSettings.synchronizationSettings
   val utxSettings: UtxSettings                         = commonSettings.utxSettings
 
@@ -158,7 +159,8 @@ object MiningWithRewardSuite {
       .copy(functionalitySettings = functionalitySettings)
       .copy(rewardsSettings = RewardsSettings.TESTNET)
 
-  val settings: AcrylSettings = commonSettings.copy(minerSettings = minerSettings, blockchainSettings = blockchainSettings)
+  val settings: AcrylSettings =
+    commonSettings.copy(minerSettings = minerSettings, blockchainSettings = blockchainSettings, networkSettings = networkSettings)
 
   def createAccount: KeyPair =
     Gen
