@@ -29,7 +29,9 @@ object FirstDifferentBlock extends App {
   val MAINNET2 = "http://138.201.152.164"
   val MAINNET3 = "http://138.201.152.165" // 626195
 
+  @scala.annotation.tailrec
   def firstDifferent(min: Int, max: Int, areSame: Int => Boolean): Int = {
+    //noinspection ScalaStyle
     println("searching [" + min + ", " + max + ")")
     if (max - min <= 1)
       max
@@ -41,5 +43,6 @@ object FirstDifferentBlock extends App {
     }
   }
 
+  //noinspection ScalaStyle
   println("first different block height is " + firstDifferent(1, 258, nodeComparator(DEVNET3D, DEVNET3)))
 }
