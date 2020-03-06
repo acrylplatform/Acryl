@@ -38,7 +38,7 @@ class MiningWithRewardSuite extends AsyncFlatSpec with Matchers with WithDB with
 
   behavior of "Miner with activated reward feature"
 
-  it should "generate valid empty block of version 4 after block of version 3" in {
+  it should "generate valid empty block" in {
     withEnv(Seq((ts, reference, _) => TestBlock.create(time = ts, ref = reference, txs = Seq.empty, version = Block.NgBlockVersion))) {
       case Env(_, account, miner, blockchain) =>
         val generateBlock = generateBlockTask(miner)(account)
@@ -52,7 +52,7 @@ class MiningWithRewardSuite extends AsyncFlatSpec with Matchers with WithDB with
     }
   }
 
-  it should "generate valid blocks with transactions of version 4" in {
+  it should "generate valid blocks with transactions" in {
     val bps: Seq[BlockProducer] = Seq(
       (ts, reference, account) => {
         val recipient1 = createAccount.toAddress
