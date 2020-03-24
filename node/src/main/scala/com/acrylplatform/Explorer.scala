@@ -11,7 +11,7 @@ import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.{Base58, Base64, EitherExt2}
 import com.acrylplatform.database.{DBExt, Keys, LevelDBWriter}
 import com.acrylplatform.db.openDB
-import com.acrylplatform.settings.{AcrylSettings, loadConfig}
+import com.acrylplatform.settings.{AcrylSettings, Constants, loadConfig}
 import com.acrylplatform.state.{Height, TxNum}
 import com.acrylplatform.transaction.Asset.IssuedAsset
 import com.acrylplatform.transaction.{Transaction, TransactionParsers}
@@ -220,6 +220,10 @@ object Explorer extends ScorexLogging {
           for ((prefix, stats) <- result.asScala) {
             log.info(s"${keys(prefix)},${stats.entryCount},${stats.totalKeySize},${stats.totalValueSize}")
           }
+
+        case "SAL" =>
+          val allAmountLeases = reader.allActiveLeases.map(_.amount).sum.toDouble / Constants.UnitsInWave.toDouble
+          println("Sum all amount active leases: " + allAmountLeases)
 
         case "TXBH" =>
           val txs = new ListBuffer[(TxNum, Transaction)]
