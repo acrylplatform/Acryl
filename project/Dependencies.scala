@@ -140,7 +140,7 @@ object Dependencies {
       "com.typesafe.play"        %% "play-json"     % "2.7.1",
       "org.ethereum"             % "leveldbjni-all" % "1.18.3",
       // "io.swagger"                   %% "swagger-scala-module" % "1.0.4",
-      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.0",
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "1.1.1",
       "javax.xml.bind"               % "jaxb-api"           % "2.3.1", // javax.xml.bind replacement for jackson in swagger
       jacksonModule("core", "databind"),
       jacksonModuleScala,
