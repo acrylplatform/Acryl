@@ -2,11 +2,12 @@ package com.acrylplatform.api.http.swagger
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.github.swagger.akka.SwaggerHttpService
-import com.github.swagger.akka.model.{Info, License}
 import com.acrylplatform.Version
 import com.acrylplatform.settings.RestAPISettings
-import io.swagger.models.{Scheme, Swagger}
+import com.github.swagger.akka.SwaggerHttpService
+import com.github.swagger.akka.model.{Info, License}
+import io.swagger.models.auth.{ApiKeyAuthDefinition, In}
+import io.swagger.models.{Scheme, SecurityRequirement, Swagger}
 
 class SwaggerDocService(val actorSystem: ActorSystem, val materializer: ActorMaterializer, val apiClasses: Set[Class[_]], settings: RestAPISettings)
     extends SwaggerHttpService {
@@ -27,4 +28,10 @@ class SwaggerDocService(val actorSystem: ActorSystem, val materializer: ActorMat
     .info(info)
     .scheme(Scheme.HTTP)
     .scheme(Scheme.HTTPS)
+    .security(new SecurityRequirement().requirement(SwaggerDocService.apiKeyDefinitionName))
+    .securityDefinition(SwaggerDocService.apiKeyDefinitionName, new ApiKeyAuthDefinition("X-API-Key", In.HEADER))
+}
+
+object SwaggerDocService {
+  final val apiKeyDefinitionName = "API Key"
 }
