@@ -26,8 +26,8 @@ class SwaggerDocService(val actorSystem: ActorSystem, val materializer: ActorMat
   override val swaggerConfig: Swagger = new Swagger()
     .basePath(SwaggerHttpService.prependSlashIfNecessary(basePath))
     .info(info)
-    .scheme(Scheme.HTTP)
     .scheme(Scheme.HTTPS)
+    .scheme(Scheme.HTTP)
     .security(new SecurityRequirement().requirement(SwaggerDocService.apiKeyDefinitionName))
     .securityDefinition(SwaggerDocService.apiKeyDefinitionName, new ApiKeyAuthDefinition("X-API-Key", In.HEADER))
 }
