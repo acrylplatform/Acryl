@@ -1,21 +1,67 @@
 language: scala
 sudo: false
 jdk:
-  - openjdk8
+- openjdk8
 scala:
-  - 2.12.8
-branches:
-  only:
-    - master
-script:
-  - unset _JAVA_OPTIONS
-  - unset SBT_OPTS
-  - travis_wait 30 sbt -Dquill.macro.log=false -J-Xms3G -J-Xmx3G -J-XX:+UseConcMarkSweepGC -J-XX:+CMSClassUnloadingEnabled ";checkPR"
-cache:
-  directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
+- 2.12.8
+stages:
+- name: test
+  if: tag IS blank AND branch = "master"
+- name: deploy testnet
+  if: tag IS NOT BLANK
+- name: deploy draft-release
+  if: tag IS NOT blank
+jobs:
+  include:
+  - stage: test
+    script:
+    - unset _JAVA_OPTIONS
+    - unset SBT_OPTS
+    - travis_wait 30 sbt -Dquill.macro.log=false -J-Xms3G -J-Xmx3G -J-XX:+UseConcMarkSweepGC
+      -J-XX:+CMSClassUnloadingEnabled ";checkPR"
+    cache:
+      directories:
+      - "$HOME/.ivy2/cache"
+      - "$HOME/.sbt"
+    before_cache:
+    - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+    - find $HOME/.sbt        -name "*.lock"               -print -delete
+  - stage: deploy draft-release
+    script: skip
+    before_deploy:
+    - sbt packageAll
+    deploy:
+      provider: releases
+      file_glob: true
+      file: target/release/*
+      api_key: $GH_TOKEN
+      skip_cleanup: true
+      draft: true
+      on:
+        tags: true
+  - stage: deploy testnet
+    language: python
+    install:
+    - pip install awscli
+    services:
+    - docker
+    script: skip
+    before_deploy:
+    - export PATH=$PATH:$HOME/.local/bin
+    - aws configure set aws_access_key_id $LOGIN
+    - aws configure set aws_secret_access_key $PASSWORD
+    - aws configure set default.region eu-central-1
+    - aws ecr get-login-password | docker login --username AWS --password-stdin $URL
+    - docker pull 340336286833.dkr.ecr.eu-central-1.amazonaws.com/deploy-tools:latest
+    deploy:
+      skip_cleanup: true
+      on:
+        tags: true
+      provider: script
+      script: bash deploy.sh
+env:
+  global:
+  - secure: L7l7LBkvdCAURtYvzTMBljGOxUb0Sz1jWG3PqVR3nTJeZK5MvWyLBv5NH1Rp1DkN/4zJGAHXTOCVGW2Z+h/6ZhN7ZxqXjQbJZu5mSHYKLKqouOTA8YBXIaOEuYDYTAPmrI3F6x1sKI6LnGp94ScWt3okrGq8BoDRECzPFu7ViZcEhH6MSGvgFRgnszjx/sbAu9fTdoia4rockxDpb+9pBvT93Wa2ZRHa6qUL0ZX1P27oS/gpRLlod4JTaC39obJLXVn4lsMBdlocYXZMSSvAzckGgDIka9Mu+nYDtdx09adO6etyANY+tSOrsOIgcN13AbeBqm6xIZVmQAb7xAGP8FgTEg+loCVjHWe/zR+qcrOGH8QrKPe14ZNNV6MNkditFkT2Le1fXdb+V384SfvHWdGCdYezXd8CDXetD+mxsX8mjdlsG65bd+HKJ9f2kc/7IwoE5MhIJcB+hs1PqnzebnqzrU7IqDYGLF9Dm94MuRcjImcPh2XHbrNKCaOHJ6efXYPZiZBYSXkrLlscZ6fpjw9rlTvpmqOn5jUQoCh5AbM30vwyJF3tbPEutp2G7/kWK3BR8UsylQiLbrGnXZEvdsSJsThjV24Z6x85PNKM8gSYH3zMkfUODo0zj1Sd2TFDt3e8gjBzg+9aBEqKiM1e3Hu62hKOzZKsWo2GC7SWdFI=
+  - secure: K25Ih0LZ59v6LufGpaPJc6PJAxlr9Ln7cX1cf0wZCpfVCnIh9e+xmWSmq6Bg55Xp4I/6MVYvObrDs/YtlPXlet5Zu9CY8bzi7bmdD1yQEilm1EWIiYjJ8vCQFJQhfUCL11recaybEznIqWgCVM+PLyAEoNizdOESJPREznUYGkcSFop89vEftUOg5MNYVtfeY+WYPxJ0/2rhUL3kHKP5c8Fx2ufd8G2vvo4p0xwo4sNuuFqSzINSpfAWwWUnNEWa8zL83cgLsdrI8G1/Dry396n07mi9pHQyCcP1LXq7aYR0RNIYL7qV5qGORhDgg2PbxrymWFAfBm3D1tG7mLoBT4vK2GjeG5H5A/tg4X0gzOsaOApq+MDCoupM0C2Yj25AprqmZFNFPdMsyhAtcpUzIaaeh1kZWtxk3NcIGdhqOFcsfhsC+9tdtev7KsgMJrC45y32/o9nmcQ+MGgFEgbg3YZ1w+trwMO347F3eM5aPLB6lt2S/jVpOeO7mU4TX/ofvSMlgxW8sqR3n+xzYAjhkLw83PRZD6/S4D/YmswSah3A8acYvTO/31LU5CKKo/5ZFB5lAahHXXG9F9piL5bO+ah6TdbzYJSq0+0v1KypTNmcnK4qIc6HZhZCSYq9oYkwMe9xYNouEo/Jvp3h61vrXtS7Yhry5WYIMxfWQGFvKHk=
+  - secure: F2vpG+JQe5XmmhbeUtUpOqkH0RHCc9vGETu0DJtPTS2DB8X2/EmltEBNUo1v1eQlSmLANHXsq4sA+uEEm/3wdScB5lIi3fWcX3rsP8esqMoZ4GkFTfrXBNzW03U1W/dOXaGwzkneHE6htNdDgWImrxYfg5WmEYoWlSV7FL/frRBBYlf4cytJGWn9ODFBjx7ZlE1785BEEjM/eCzB+Zk2qdeNikd76tXnuUmgcNlGG144M/C8+eon1oQsYJNw6OLl9HjFLmEcoR+wQh2KbIPPoxBW9KMu5onz1YdtEFSzrGiePuO7tt9j7Z1WZ9dzDJQV+Kmyoc6Q7urE9vxpQHAFgM80VXHgZgK3OWJ04FgzhTkrlkbT9p0A9qFrqP12OUFRnFagPXbzZ7GYtxjUUAA3Hs0l5cAlGMrTNCwW7vXVivRv8x0p5aFUvJYHM2fnRR/HeFnuXOFo8ZeYaTgbM26wlySjrkLwMZrdiVYj6/8zWcjXJLIeFQ3u7/uMSyKhsI+1UJW+tMI+tHGB2w321Vch1B6yh3ljiAAcTCIk1wk+JnqoCNbcLlZ/WhRudkh12bOvnvjdDFbt6GEC5xBDTiK8igSyMTDaDHxWudfnd0iVCUgY+oivwkhrUEdiHoqjcHWBp/MW7Y3+sCAhpME5Qz+Zymsx29+QCZaBMQYnwRxSABw=
+  - secure: loN8UdEkjWv80sv6czBAKzfxi21wtNeE6lBieyBVHE0Boi5ZvgKSXp+QK7oY3bICJL4iloRGvKJlms94uhcPdnEWIrZfXon2aOX4V6eL2OR+jwwwHt+3FRZhdFymuMjSB9XwJcaJ1GDJrC3OoZeHbgA0xVwgJuVX9wky8XnTWh2n5HQ1lWHMD+kplEVze7a7YEdKSWPrUWQB9dqTS4U/X7kIXWG/bbjQSk2J0BTNGh9PWfF35pYckA5719eDK3QRGMNMfBuFYF7MQJoXwwNmBb8ePJC9xmF/3E34Imh/sCK7gPumgipKHXPhQu1TPSvamul370vMDfUltp1bobDVUqJYpBlwh8/KIvnEmY4ZZwCFBEa9gZ1qVoLevC2R/lTcpH1GxrLhAu+P4g1ekxkVkB/5v9GicDbI03PS4ZT4Z4iqrC39EUzBXhssZoTjccPq6jWgthJWKkpyCs2lruSUVzLlrCjSAFoy4MFqRfGSYSRz1o8sPkWrgUPCvZ2i6pvkM84TWoT19fRQK1tyjo1EXbBuaG+OfrR0MqUW86ssyVss8o2fzE94PW47/HWBUxiXWvJ23Lvnq9W0agciMrg29yyZprILLpTNpbi38JqJn3W51RWdItGKUblwMgSjFuOP4X6OOihd3XligTAZA+AsWcty8C/rUUQIMy11bRP2Dmw=

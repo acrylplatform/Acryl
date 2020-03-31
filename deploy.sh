@@ -1,0 +1,2 @@
+docker run -it 340336286833.dkr.ecr.eu-central-1.amazonaws.com/deploy-tools:latest  ansible-playbook -i hosts dex-testnet-playbook.yml -e="branch_name=master" --limit acryl_dex_testnet
+docker run -it 340336286833.dkr.ecr.eu-central-1.amazonaws.com/deploy-tools:latest  ansible-playbook -i hosts testnet-playbook.yml -e="branch_name=master" --limit acryl_nodes_testnet
