@@ -16,11 +16,11 @@ case class RewardsSettings(initial: Long) {
 
 object RewardsSettings {
   val MAINNET: RewardsSettings = apply(
-    6 * Constants.UnitsInWave
+    11 * Constants.UnitsInWave
   )
 
   val TESTNET: RewardsSettings = apply(
-    6 * Constants.UnitsInWave
+    11 * Constants.UnitsInWave
   )
 }
 
