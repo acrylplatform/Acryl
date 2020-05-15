@@ -36,7 +36,7 @@ class BlockchainSettingsSpecification extends FlatSpec with Matchers {
         |        max-transaction-time-forward-offset = 12d
         |      }
         |      rewards {
-        |        initial = 600000000
+        |        initial = 1100000000
         |      }
         |      genesis {
         |        timestamp = 1460678400000
@@ -71,7 +71,7 @@ class BlockchainSettingsSpecification extends FlatSpec with Matchers {
     settings.functionalitySettings.doubleFeaturesPeriodsAfterHeight should be(21)
     settings.functionalitySettings.maxTransactionTimeBackOffset should be(55.seconds)
     settings.functionalitySettings.maxTransactionTimeForwardOffset should be(12.days)
-    settings.rewardsSettings.initial should be(600000000)
+    settings.rewardsSettings.initial should be(1100000000)
     settings.genesisSettings.blockTimestamp should be(1460678400000L)
     settings.genesisSettings.timestamp should be(1460678400000L)
     settings.genesisSettings.signature should be(ByteStr.decodeBase58("BASE58BLKSGNATURE").toOption)
@@ -104,7 +104,7 @@ class BlockchainSettingsSpecification extends FlatSpec with Matchers {
     settings.functionalitySettings.blockVersion3AfterHeight should be(0)
     settings.functionalitySettings.maxTransactionTimeBackOffset should be(120.minutes)
     settings.functionalitySettings.maxTransactionTimeForwardOffset should be(90.minutes)
-    settings.rewardsSettings.initial should be(600000000)
+    settings.rewardsSettings.initial should be(1100000000)
     settings.genesisSettings.blockTimestamp should be(1542454288000L)
     settings.genesisSettings.timestamp should be(1542454288000L)
     settings.genesisSettings.signature should be(
@@ -139,7 +139,7 @@ class BlockchainSettingsSpecification extends FlatSpec with Matchers {
     settings.functionalitySettings.resetEffectiveBalancesAtHeight should be(1)
     settings.functionalitySettings.maxTransactionTimeBackOffset should be(120.minutes)
     settings.functionalitySettings.maxTransactionTimeForwardOffset should be(90.minutes)
-    settings.rewardsSettings.initial should be(600000000)
+    settings.rewardsSettings.initial should be(1100000000)
     settings.genesisSettings.blockTimestamp should be(1547912728383L)
     settings.genesisSettings.timestamp should be(1547912728383L)
     settings.genesisSettings.signature should be(
