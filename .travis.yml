@@ -7,8 +7,6 @@ scala:
 stages:
 - name: test
   if: tag IS blank AND branch = "master"
-- name: deploy testnet
-  if: tag IS NOT BLANK
 - name: deploy draft-release
   if: tag IS NOT blank
 jobs:
@@ -39,26 +37,6 @@ jobs:
       draft: true
       on:
         tags: true
-  - stage: deploy testnet
-    language: python
-    install:
-    - pip install awscli
-    services:
-    - docker
-    script: skip
-    before_deploy:
-    - export PATH=$PATH:$HOME/.local/bin
-    - aws configure set aws_access_key_id $LOGIN
-    - aws configure set aws_secret_access_key $PASSWORD
-    - aws configure set default.region eu-central-1
-    - aws ecr get-login-password | docker login --username AWS --password-stdin $URL
-    - docker pull 340336286833.dkr.ecr.eu-central-1.amazonaws.com/deploy-tools:latest
-    deploy:
-      skip_cleanup: true
-      on:
-        tags: true
-      provider: script
-      script: bash deploy.sh
 env:
   global:
   - secure: L7l7LBkvdCAURtYvzTMBljGOxUb0Sz1jWG3PqVR3nTJeZK5MvWyLBv5NH1Rp1DkN/4zJGAHXTOCVGW2Z+h/6ZhN7ZxqXjQbJZu5mSHYKLKqouOTA8YBXIaOEuYDYTAPmrI3F6x1sKI6LnGp94ScWt3okrGq8BoDRECzPFu7ViZcEhH6MSGvgFRgnszjx/sbAu9fTdoia4rockxDpb+9pBvT93Wa2ZRHa6qUL0ZX1P27oS/gpRLlod4JTaC39obJLXVn4lsMBdlocYXZMSSvAzckGgDIka9Mu+nYDtdx09adO6etyANY+tSOrsOIgcN13AbeBqm6xIZVmQAb7xAGP8FgTEg+loCVjHWe/zR+qcrOGH8QrKPe14ZNNV6MNkditFkT2Le1fXdb+V384SfvHWdGCdYezXd8CDXetD+mxsX8mjdlsG65bd+HKJ9f2kc/7IwoE5MhIJcB+hs1PqnzebnqzrU7IqDYGLF9Dm94MuRcjImcPh2XHbrNKCaOHJ6efXYPZiZBYSXkrLlscZ6fpjw9rlTvpmqOn5jUQoCh5AbM30vwyJF3tbPEutp2G7/kWK3BR8UsylQiLbrGnXZEvdsSJsThjV24Z6x85PNKM8gSYH3zMkfUODo0zj1Sd2TFDt3e8gjBzg+9aBEqKiM1e3Hu62hKOzZKsWo2GC7SWdFI=
