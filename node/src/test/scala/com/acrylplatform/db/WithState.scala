@@ -6,11 +6,12 @@ import com.typesafe.config.ConfigFactory
 import com.acrylplatform.account.Address
 import com.acrylplatform.database.LevelDBWriter
 import com.acrylplatform.history.Domain
-import com.acrylplatform.settings.{FunctionalitySettings, AcrylSettings, loadConfig}
+import com.acrylplatform.settings.{AcrylSettings, FunctionalitySettings, loadConfig}
 import com.acrylplatform.state.BlockchainUpdaterImpl
 import com.acrylplatform.transaction.Asset
 import com.acrylplatform.utils.Implicits.SubjectOps
 import com.acrylplatform.{NTPTime, TestHelpers}
+import monix.reactive.Observer
 import monix.reactive.subjects.Subject
 import org.scalatest.Suite
 
@@ -27,6 +28,16 @@ trait WithState extends DBCacheSettings {
   }
 
   def withStateAndHistory(fs: FunctionalitySettings)(test: LevelDBWriter => Any): Unit = withState(fs)(test)
+
+  def withLevelDBWriter[A](fs: FunctionalitySettings)(test: LevelDBWriter => A): A = {
+    val path = Files.createTempDirectory("leveldb-test")
+    val db   = openDB(path.toAbsolutePath.toString)
+    try test(new LevelDBWriter(db, Observer.stopped, fs, dbSettings))
+    finally {
+      db.close()
+      TestHelpers.deleteRecursively(path)
+    }
+  }
 }
 
 trait WithDomain extends WithState with NTPTime {

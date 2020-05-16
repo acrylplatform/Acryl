@@ -166,4 +166,11 @@ object Keys {
   val InvokeScriptResultPrefix: Short = 56
   def invokeScriptResult(height: Int, txNum: TxNum): Key[InvokeScriptResult] =
     Key("invoke-script-result", hNum(InvokeScriptResultPrefix, height, txNum), InvokeScriptResult.fromBytes, InvokeScriptResult.toBytes)
+
+  val BlockRewardPrefix: Short = 57
+  def blockReward(height: Int): Key[Option[Long]] =
+    Key.opt("block-reward", h(BlockRewardPrefix, height), Longs.fromByteArray, Longs.toByteArray)
+
+  val acrylAmountPrefix: Short              = 58
+  def acrylAmount(height: Int): Key[BigInt] = Key("acryl-amount", h(acrylAmountPrefix, height), Option(_).fold(BigInt(0))(BigInt(_)), _.toByteArray)
 }

@@ -12,7 +12,7 @@ import com.acrylplatform.http.ApiMarshallers._
 import com.acrylplatform.lang.directives.values.V1
 import com.acrylplatform.lang.script.v1.ExprScript
 import com.acrylplatform.lang.v1.compiler.Terms.TRUE
-import com.acrylplatform.settings.{BlockchainSettings, GenesisSettings, TestFunctionalitySettings, WalletSettings}
+import com.acrylplatform.settings._
 import com.acrylplatform.state.{AssetDescription, Blockchain}
 import com.acrylplatform.transaction.Asset.IssuedAsset
 import com.acrylplatform.utx.UtxPool
@@ -66,7 +66,7 @@ class TransactionsRouteSpec
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
         (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
-        (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
+        (blockchain.settings _).expects().returning(BlockchainSettings('K', featuresSettings, GenesisSettings.TESTNET, RewardsSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
 
@@ -102,7 +102,7 @@ class TransactionsRouteSpec
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
         (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
-        (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
+        (blockchain.settings _).expects().returning(BlockchainSettings('K', featuresSettings, GenesisSettings.TESTNET, RewardsSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
 
@@ -134,7 +134,7 @@ class TransactionsRouteSpec
         (blockchain.height _).expects().returning(1).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).anyNumberOfTimes()
         (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
-        (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
+        (blockchain.settings _).expects().returning(BlockchainSettings('K', featuresSettings, GenesisSettings.TESTNET, RewardsSettings.TESTNET))
 
         val route = TransactionsApiRoute(restAPISettings, wallet, blockchain, utx, allChannels, new TestTime).route
 
@@ -164,7 +164,7 @@ class TransactionsRouteSpec
         (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(false).once()
         (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
-        (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
+        (blockchain.settings _).expects().returning(BlockchainSettings('K', featuresSettings, GenesisSettings.TESTNET, RewardsSettings.TESTNET))
         (blockchain.assetDescription _)
           .expects(assetId)
           .returning(Some(AssetDescription(
@@ -208,7 +208,7 @@ class TransactionsRouteSpec
         (blockchain.height _).expects().returning(featuresSettings.featureCheckBlocksPeriod).anyNumberOfTimes()
         (blockchain.hasScript _).expects(sender.toAddress).returning(true).once()
         (blockchain.activatedFeatures _).expects().returning(featuresSettings.preActivatedFeatures).anyNumberOfTimes()
-        (blockchain.settings _).expects().returning(BlockchainSettings('T', featuresSettings, GenesisSettings.TESTNET))
+        (blockchain.settings _).expects().returning(BlockchainSettings('K', featuresSettings, GenesisSettings.TESTNET, RewardsSettings.TESTNET))
         (blockchain.assetDescription _)
           .expects(assetId)
           .returning(Some(AssetDescription(

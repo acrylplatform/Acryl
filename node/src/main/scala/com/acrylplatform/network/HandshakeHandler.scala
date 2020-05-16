@@ -144,7 +144,7 @@ object HandshakeHandler extends ScorexLogging {
     val chainId = remote.substring(5)
     val localChainId = local.substring(5)
 
-    (appName == "waves" || appName == "acryl") && (chainId == "A" || chainId == "K" || chainId == "I") && chainId == localChainId
+    (appName == "waves" || appName == "acryl") && (chainId == "A" || chainId == "K" || chainId == "D" || chainId == "I") && chainId == localChainId
   }
 
   def removeHandshakeHandlers(ctx: ChannelHandlerContext, thisHandler: ChannelHandler): Unit = {
