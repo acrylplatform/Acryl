@@ -87,7 +87,7 @@ class Application(val actorSystem: ActorSystem, val settings: AcrylSettings, con
   private val extensionLoaderScheduler        = singleThread("rx-extension-loader", reporter = log.error("Error in Extension Loader", _))
   private val microblockSynchronizerScheduler = singleThread("microblock-synchronizer", reporter = log.error("Error in Microblock Synchronizer", _))
   private val scoreObserverScheduler          = singleThread("rx-score-observer", reporter = log.error("Error in Score Observer", _))
-  private val appenderScheduler               = fixedPool("appender", poolSize = 3, reporter = log.error("Error in Appender", _))
+  private val appenderScheduler               = singleThread("appender", reporter = log.error("Error in Appender", _))
   private val historyRepliesScheduler         = fixedPool("history-replier", poolSize = 2, reporter = log.error("Error in History Replier", _))
   private val minerScheduler                  = fixedPool("miner-pool", poolSize = 2, reporter = log.error("Error in Miner", _))
 
