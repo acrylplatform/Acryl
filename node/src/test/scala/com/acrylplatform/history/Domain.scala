@@ -4,6 +4,7 @@ import com.acrylplatform.account.Address
 import com.acrylplatform.block.Block
 import com.acrylplatform.common.state.ByteStr
 import com.acrylplatform.common.utils.EitherExt2
+import com.acrylplatform.database.LevelDBWriter
 import com.acrylplatform.state._
 import com.acrylplatform.state.extensions.Distributions
 import com.acrylplatform.transaction.{BlockchainUpdater, DiscardedBlocks, DiscardedTransactions, Transaction}
@@ -12,7 +13,7 @@ import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.duration.Duration
 
 //noinspection ScalaStyle
-case class Domain(blockchainUpdater: BlockchainUpdater with NG) {
+case class Domain(blockchainUpdater: BlockchainUpdater with NG, levelDBWriter: LevelDBWriter) {
   def effBalance(a: Address): Long = blockchainUpdater.effectiveBalance(a, 1000)
 
   def appendBlock(b: Block): Option[DiscardedTransactions] = blockchainUpdater.processBlock(b).explicitGet()
