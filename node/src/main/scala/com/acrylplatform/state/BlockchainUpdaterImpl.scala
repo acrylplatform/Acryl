@@ -126,20 +126,20 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
   }
 
   private def rewardForBlock(block: Block): Option[Long] = {
-    val settings = blockchain.settings.rewardsSettings
-    val height   = blockchain.height + 1
+    val settings   = this.settings.rewardsSettings
+    val nextHeight = this.height + 1
 
     blockchain
       .featureActivationHeight(BlockchainFeatures.BlockReward.id)
-      .filter(_ <= height)
+      .filter(_ <= nextHeight)
       .flatMap { activatedAt =>
         val mayBeReward     = lastBlockReward
-        val mayBeTimeToVote = height - activatedAt
+        val mayBeTimeToVote = nextHeight - activatedAt
 
         mayBeReward match {
           case Some(reward) if mayBeTimeToVote > 0 =>
             Some(reward)
-          case None if mayBeTimeToVote == 0 =>
+          case None if mayBeTimeToVote >= 0 =>
             Some(settings.initial)
           case _ => None
         }
@@ -171,7 +171,13 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
                 val miningConstraints = MiningConstraints(blockchain, height)
                 val reward            = rewardForBlock(block)
                 BlockDiffer
-                  .fromBlock(CompositeBlockchain(blockchain, reward = reward), blockchain.lastBlock, block, miningConstraints.total, verify)
+                  .fromBlock(
+                    CompositeBlockchain(blockchain, carry = blockchain.carryFee, reward = reward),
+                    blockchain.lastBlock,
+                    block,
+                    miningConstraints.total,
+                    verify
+                  )
                   .map(r => Option((r, Seq.empty[Transaction], reward)))
             }
           case Some(ng) =>
@@ -181,7 +187,13 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
                 val miningConstraints = MiningConstraints(blockchain, height)
 
                 BlockDiffer
-                  .fromBlock(blockchain, blockchain.lastBlock, block, miningConstraints.total, verify)
+                  .fromBlock(
+                    CompositeBlockchain(blockchain, carry = blockchain.carryFee, reward = ng.reward),
+                    blockchain.lastBlock,
+                    block,
+                    miningConstraints.total,
+                    verify
+                  )
                   .map { r =>
                     log.trace(
                       s"Better liquid block(score=${block.blockScore()}) received and applied instead of existing(score=${ng.base.blockScore()})")
@@ -197,7 +209,13 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
                   val miningConstraints = MiningConstraints(blockchain, height)
 
                   BlockDiffer
-                    .fromBlock(blockchain, blockchain.lastBlock, block, miningConstraints.total, verify)
+                    .fromBlock(
+                      CompositeBlockchain(blockchain, carry = blockchain.carryFee, reward = ng.reward),
+                      blockchain.lastBlock,
+                      block,
+                      miningConstraints.total,
+                      verify
+                    )
                     .map(r => Some((r, Seq.empty[Transaction], None)))
                 }
               } else
@@ -220,7 +238,8 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
                       miningConstraints.total
                     }
 
-                    val reward = rewardForBlock(block)
+                    val prevReward = ng.reward
+                    val reward     = rewardForBlock(block)
 
                     val diff = BlockDiffer
                       .fromBlock(
@@ -232,7 +251,7 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
                       )
 
                     diff.map { hardenedDiff =>
-                      blockchain.append(referencedLiquidDiff, carry, totalFee, reward, referencedForgedBlock)
+                      blockchain.append(referencedLiquidDiff, carry, totalFee, prevReward, referencedForgedBlock)
                       TxsInBlockchainStats.record(ng.transactions.size)
                       Some((hardenedDiff, discarded.flatMap(_.transactionData), reward))
                     }
@@ -377,7 +396,11 @@ class BlockchainUpdaterImpl(private val blockchain: LevelDBWriter,
   }
 
   override def acrylAmount(height: Int): BigInt = readLock {
-    blockchain.acrylAmount(height - ngState.fold(0)(_ => 1)) + ngState.flatMap(s => s.reward).map(BigInt(_)).getOrElse(BigInt(0))
+    ngState match {
+      case Some(ng) if this.height == height =>
+        blockchain.acrylAmount(height - 1) + ng.reward.map(BigInt(_)).getOrElse(BigInt(0))
+      case _ => blockchain.acrylAmount(height)
+    }
   }
 
   private def liquidBlockHeaderAndSize() = ngState.map { s =>

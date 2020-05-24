@@ -46,7 +46,7 @@ trait WithDomain extends WithState with NTPTime {
   def withDomain[A](settings: AcrylSettings = AcrylSettings.fromRootConfig(loadConfig(ConfigFactory.load())))(test: Domain => A): A = {
     try withState(settings.blockchainSettings.functionalitySettings) { blockchain =>
       val bcu = new BlockchainUpdaterImpl(blockchain, ignoreSpendableBalanceChanged, settings, ntpTime)
-      try test(Domain(bcu))
+      try test(Domain(bcu, blockchain))
       finally bcu.shutdown()
     } finally {}
   }
