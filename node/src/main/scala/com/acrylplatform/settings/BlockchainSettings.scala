@@ -92,7 +92,8 @@ object FunctionalitySettings {
       BlockchainFeatures.OrderV3.id                         -> 456180,
       BlockchainFeatures.ReduceNFTFee.id                    -> 456180,
       BlockchainFeatures.MinimumGeneratingBalanceOf100.id   -> 456180,
-      BlockchainFeatures.ChangeMinimalFees.id               -> 456180
+      BlockchainFeatures.ChangeMinimalFees.id               -> 456180,
+      BlockchainFeatures.BlockReward.id                     -> 710000
     ),
     doubleFeaturesPeriodsAfterHeight = 0,
     maxTransactionTimeBackOffset = 120.minutes,
@@ -124,7 +125,10 @@ object FunctionalitySettings {
       BlockchainFeatures.SmartAccountTrading.id             -> 0,
       BlockchainFeatures.Ride4DApps.id                      -> 0,
       BlockchainFeatures.OrderV3.id                         -> 0,
-      BlockchainFeatures.ReduceNFTFee.id                    -> 0
+      BlockchainFeatures.ReduceNFTFee.id                    -> 0,
+      BlockchainFeatures.MinimumGeneratingBalanceOf100.id   -> 475560,
+      BlockchainFeatures.ChangeMinimalFees.id               -> 475560,
+      BlockchainFeatures.BlockReward.id                     -> 793950
     ),
     doubleFeaturesPeriodsAfterHeight = 0,
     maxTransactionTimeBackOffset = 120.minutes,
