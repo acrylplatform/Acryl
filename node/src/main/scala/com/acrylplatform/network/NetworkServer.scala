@@ -19,6 +19,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.{NioServerSocketChannel, NioSocketChannel}
 import io.netty.handler.codec.{LengthFieldBasedFrameDecoder, LengthFieldPrepender}
+import io.netty.handler.proxy.Socks5ProxyHandler
 import io.netty.util.concurrent.DefaultThreadFactory
 import monix.reactive.Observable
 import org.influxdb.dto.Point
@@ -136,25 +137,33 @@ object NetworkServer extends ScorexLogging {
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, settings.networkSettings.connectionTimeout.toMillis.toInt: Integer)
       .group(workerGroup)
       .channel(classOf[NioSocketChannel])
-      .handler(new PipelineInitializer[SocketChannel](Seq(
-        new BrokenConnectionDetector(settings.networkSettings.breakIdleConnectionsTimeout),
-        new HandshakeDecoder(peerDatabase),
-        new HandshakeTimeoutHandler(settings.networkSettings.handshakeTimeout),
-        clientHandshakeHandler,
-        lengthFieldPrepender,
-        new LengthFieldBasedFrameDecoder(100 * 1024 * 1024, 0, 4, 0, 4),
-        new LegacyFrameCodec(peerDatabase, settings.networkSettings.receivedTxsCacheTimeout),
-        channelClosedHandler,
-        trafficWatcher,
-        discardingHandler,
-        messageCodec,
-        trafficLogger,
-        writeErrorHandler,
-        peerSynchronizer,
-        historyReplier,
-        messageObserver,
-        fatalErrorHandler
-      )))
+      .handler(new ChannelInitializer[Channel] {
+        override def initChannel(ch: Channel): Unit = {
+          val pipeline = ch.pipeline()
+          pipeline.addLast(new BrokenConnectionDetector(settings.networkSettings.breakIdleConnectionsTimeout))
+          pipeline.addLast(new HandshakeDecoder(peerDatabase))
+          pipeline.addLast(new HandshakeTimeoutHandler(settings.networkSettings.handshakeTimeout))
+          pipeline.addLast(clientHandshakeHandler)
+          pipeline.addLast(lengthFieldPrepender)
+          pipeline.addLast(new LengthFieldBasedFrameDecoder(100 * 1024 * 1024, 0, 4, 0, 4))
+          pipeline.addLast(new LegacyFrameCodec(peerDatabase, settings.networkSettings.receivedTxsCacheTimeout))
+          pipeline.addLast(channelClosedHandler)
+          pipeline.addLast(trafficWatcher)
+          pipeline.addLast(discardingHandler)
+          pipeline.addLast(messageCodec)
+          pipeline.addLast(trafficLogger)
+          pipeline.addLast(writeErrorHandler)
+          pipeline.addLast(peerSynchronizer)
+          pipeline.addLast(historyReplier)
+          pipeline.addLast(messageObserver)
+          pipeline.addLast(fatalErrorHandler)
+
+          settings.networkSettings.proxy match {
+            case Some(value) => pipeline.addFirst(new Socks5ProxyHandler(value))
+            case None        =>
+          }
+        }
+      })
 
     def formatOutgoingChannelEvent(channel: Channel, event: String) = s"${id(channel)} $event, outgoing channel count: ${outgoingChannels.size()}"
 
